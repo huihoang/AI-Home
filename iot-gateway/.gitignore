@@ -1,0 +1,17 @@
+# Bỏ qua thư mục venv (ảo hóa Python)
+venv/
+.venv/
+
+# Bỏ qua cache của Python (__pycache__)
+__pycache__/
+*.pyc
+*.pyo
+
+# Bỏ qua file tạm   
+*.log
+*.tmp
+*.swp
+.DS_Store
+
+# Bỏ qua các file môi trường
+.env
