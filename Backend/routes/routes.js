@@ -5,6 +5,7 @@ import sensorRoutes from "../routes/device.routes.js";
 import feedRoutes from "../routes/feed.routes.js";
 import ledRoutes from "./led.routes.js";
 import fanRoutes from "./fan.routes.js";
+import hangClothRoutes from "./hangClothe.routes.js";
 // import mqttClient from "../utils/adafruitService.js";
 const router = express.Router();
 
@@ -14,5 +15,6 @@ router.use("/sensors", sensorRoutes);
 router.use("/feeds", feedRoutes);
 router.use("/led", ledRoutes);
 router.use("/fan", fanRoutes);
+router.use("/hangclothe", hangClothRoutes);
 
 export default router;

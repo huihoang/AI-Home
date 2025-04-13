@@ -3,14 +3,7 @@ import mqttClient from "../utils/adafruitService.js";
 const updatedLedStatus = async (req, res) => {
   try {
     const { status } = req.body;
-
-    // Sửa lỗi kiểm tra điều kiện
-    if (status !== "ON" && status !== "OFF") {
-      return res.status(400).json({
-        message: "Trạng thái không hợp lệ! Vui lòng gửi ON hoặc OFF.",
-      });
-    }
-
+    console.log(status);
     // Publish trạng thái lên Adafruit IO
     await new Promise((resolve, reject) => {
       mqttClient.client.publish(
