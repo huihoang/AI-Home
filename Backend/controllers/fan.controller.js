@@ -6,7 +6,7 @@ const updatedFanStatus = async (req, res) => {
     console.log(status);
     await new Promise((resolve, reject) => {
       mqttClient.client.publish(
-        `${process.env.ADAFRUIT_USERNAME}/feeds/ai-home.bcc-fan`,
+        `${process.env.ADAFRUIT_USERNAME}/feeds/button-fan`,
         status,
         (err) => {
           if (err) {

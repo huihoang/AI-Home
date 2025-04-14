@@ -11,20 +11,20 @@ const client = mqtt.connect(brokerUrl, {
 
 client.on("connect", () => {
   console.log("Kết nối thành công với Adafruit IO");
-  client.subscribe(`${process.env.ADAFRUIT_USERNAME}/feeds/ai-home.bbc_led`);
-  client.subscribe(
-    `${process.env.ADAFRUIT_USERNAME}/feeds/ai-home.sensor-motion`
-  );
-  client.subscribe(
-    `${process.env.ADAFRUIT_USERNAME}/feeds/ai-home.sensor_humidity`
-  );
-  client.subscribe(
-    `${process.env.ADAFRUIT_USERNAME}/feeds/ai-home.sensor_camera`
-  );
-  client.subscribe(
-    `${process.env.ADAFRUIT_USERNAME}/feeds/ai-home.sensor_temperature`
-  );
-  client.subscribe(`${process.env.ADAFRUIT_USERNAME}/feeds/ai-home.bcc_fan`);
+  client.subscribe(`${process.env.ADAFRUIT_USERNAME}/feeds/bbc_led`);
+  // client.subscribe(
+  //   `${process.env.ADAFRUIT_USERNAME}/feeds/ai-home.sensor-motion`
+  // );
+  // client.subscribe(
+  //   `${process.env.ADAFRUIT_USERNAME}/feeds/ai-home.sensor_humidity`
+  // );
+  // client.subscribe(
+  //   `${process.env.ADAFRUIT_USERNAME}/feeds/ai-home.sensor_camera`
+  // );
+  // client.subscribe(
+  //   `${process.env.ADAFRUIT_USERNAME}/feeds/ai-home.sensor_temperature`
+  // );
+  client.subscribe(`${process.env.ADAFRUIT_USERNAME}/feeds/button-fan`);
   client.subscribe(`${process.env.ADAFRUIT_USERNAME}/feeds/button_hang_clothe`);
 });
 

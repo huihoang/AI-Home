@@ -10,11 +10,11 @@ import {
 import Navbar from "../components/Navbar";
 
 const API_URL_TEMP =
-  "https://io.adafruit.com/api/v2/hoangbk4/feeds/ai-home.bbc-temp/data";
+  "https://io.adafruit.com/api/v2/hoangbk4/feeds/sensor-temperature/data";
 const API_URL_HUMIDITY =
-  "https://io.adafruit.com/api/v2/hoangbk4/feeds/bbc-humidity/data";
+  "https://io.adafruit.com/api/v2/hoangbk4/feeds/sensor-humidity/data";
 const API_URL_BRIGHTNESS =
-  "https://io.adafruit.com/api/v2/hoangbk4/feeds/bbc-bright/data";
+  "https://io.adafruit.com/api/v2/hoangbk4/feeds/sensor-light/data";
 
 const Dashboard = () => {
   const [ledStatus, setLedStatus] = useState(false);
@@ -86,7 +86,7 @@ const Dashboard = () => {
       fetchTemperature();
       fetchHumidity();
       fetchBrightness();
-    }, 5000);
+    }, 1000);
 
     return () => clearInterval(intervalId);
   }, []);
@@ -228,7 +228,7 @@ const Dashboard = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          status: ledStatus ? "OFF" : "ON", // Send appropriate command
+          status: ledStatus ? "0" : "1", // Send appropriate command
         }),
       });
       const result = await response.json();
@@ -246,7 +246,7 @@ const Dashboard = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          status: fanStatus ? "OFF" : "ON",
+          status: fanStatus ? "off" : "on",
         }),
       });
       const result = await response.json();
@@ -1039,7 +1039,7 @@ const Dashboard = () => {
             darkMode={darkMode}
           />
           <DeviceStatus
-            name="CỬA"
+            name="HỆ THỐNG PHƠI ĐỒ"
             status={doorStatus}
             icon="🚪"
             darkMode={darkMode}
@@ -1563,7 +1563,7 @@ const Dashboard = () => {
                 fontSize: "20px",
               }}
             >
-              CỬA RA VÀO
+              HỆ THỐNG PHƠI ĐỒ
             </h3>
           </div>
 

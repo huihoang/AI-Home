@@ -3,11 +3,11 @@ import mqttClient from "../utils/adafruitService.js";
 const updatedLedStatus = async (req, res) => {
   try {
     const { status } = req.body;
-    console.log(status);
+    console.log(`status: ${typeof status}`);
     // Publish trạng thái lên Adafruit IO
     await new Promise((resolve, reject) => {
       mqttClient.client.publish(
-        `${process.env.ADAFRUIT_USERNAME}/feeds/ai-home.bbc-led`,
+        `${process.env.ADAFRUIT_USERNAME}/feeds/bbc-led`,
         status,
         (err) => {
           if (err) {
