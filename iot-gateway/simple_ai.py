@@ -66,10 +66,9 @@ def image_detector():
 
     # Print prediction and confidence score
     print("Classification AI: ", class_name, end=" - ")
-    print("Confidence Score:", str(np.round(confidence_score * 100))[:-2], "%")
+    print("Confidence Score:", str(confidence_score * 100   ), "%")
 
-    if(confidence_score > 0.5) and (class_name == "Have person"):
-        print("✅ Đã phát hiện có người trong ảnh!")
-        upload_image(encoded_string, timestamp, class_name)
+    # upload image to MongoDB
+    upload_image(encoded_string, timestamp, class_name)
     return f"{class_name} - {int(confidence_score * 100)}%"
 

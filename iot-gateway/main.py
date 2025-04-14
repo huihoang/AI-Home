@@ -5,7 +5,7 @@ import serial.tools.list_ports
 from simple_ai import *
 
 # Khai báo thông tin kết nối với Adafruit IO
-AIO_FEED_IDS = ["BBC_LED", "BBC_TEMP", "BBC_HUMIDITY", "BBC_CAMERA", "BBC_BRIGHT", "BBC_MOTION"]
+AIO_FEED_IDS = ["SENSOR_CAMERA", "SENSOR_MOTION", "BBC_LED"]
 AIO_USERNAME = "hoangbk4"
 AIO_KEY = "aio_gHTu34YaNcBEE7lzl9H402OuchQq"
 
@@ -29,11 +29,11 @@ def message(client , feed_id , payload):
     # ser.write((str(payload) + "#").encode())
 
     #! detect person enter home
-    if feed_id == "BBC_MOTION":
+    if feed_id == "SENSOR_MOTION":
         if payload == "True":
             print("MOTION detected!")
             class_name = image_detector()
-            client.publish("bbc-camera", class_name)
+            client.publish("sensor-camera", class_name)
 
 #================================================================================================
 # Kết nối với Adafruit IO
