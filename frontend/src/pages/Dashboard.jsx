@@ -1,10 +1,12 @@
-import { React, useState, useEffect, useRef } from 'react';
+import React from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay } from 'date-fns';
 import Navbar from '../components/Navbar';
+import axios from 'axios';
 
-const API_URL_TEMP = "https://io.adafruit.com/api/v2/hoangbk4/feeds/ai-home.bbc-temp/data";
-const API_URL_HUMIDITY = "https://io.adafruit.com/api/v2/hoangbk4/feeds/bbc-humidity/data";
-const API_URL_BRIGHTNESS = "https://io.adafruit.com/api/v2/hoangbk4/feeds/bbc-bright/data";
+const API_URL_TEMP = "https://io.adafruit.com/api/v2/hoangbk4/feeds/sensor-temperature/data";
+const API_URL_HUMIDITY = "https://io.adafruit.com/api/v2/hoangbk4/feeds/sensor-humidity/data";
+const API_URL_BRIGHTNESS = "https://io.adafruit.com/api/v2/hoangbk4/feeds/sensor-light/data";
 
 const Dashboard = () => {
   const [ledStatus, setLedStatus] = useState(false);
@@ -201,8 +203,36 @@ useEffect(() => {
     setCalendarDays([...emptyDays, ...days]);
   }, [currentDate]);
 
-  const toggleLED = () => setLedStatus(!ledStatus);
-  const toggleFan = () => setFanStatus(!fanStatus);
+  const toggleLED = async () => {
+    const newStatus = !ledStatus;
+    setLedStatus(newStatus);
+  
+    try {
+      await axios.post("http://localhost:8080/api/led/update-status", {
+        status: newStatus ? '1' : '0'
+      });
+      
+      console.log(`LED đã được ${newStatus ? 'bật' : 'tắt'}`);
+    } catch (error) {
+      console.error('Lỗi khi gửi yêu cầu điều khiển LED:', error);
+    }
+  };
+  
+  const toggleFan = async (forceStatus = null) => {
+  const newStatus = forceStatus !== null ? forceStatus : !fanStatus;
+  setFanStatus(newStatus);
+
+  try {
+    await axios.post("http://localhost:8080/api/fan/update-status", {
+      status: newStatus ? "ON" : "OFF"
+    });
+    console.log(`Quạt đã được ${newStatus ? 'bật' : 'tắt'}`);
+  } catch (error) {
+    console.error('Lỗi khi gửi yêu cầu điều khiển quạt:', error);
+  }
+};
+
+  
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('currentUser');

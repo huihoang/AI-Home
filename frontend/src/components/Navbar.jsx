@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { FaSearch, FaBell, FaMoon, FaSun, FaUserCircle, FaSignOutAlt } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-
 const Navbar = ({ onDarkModeToggle, darkMode }) => {
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
