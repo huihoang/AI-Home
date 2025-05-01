@@ -15,5 +15,3 @@ __pycache__/
 
 # Bỏ qua các file môi trường
 .env
-
-server.py

@@ -44,8 +44,8 @@ def image_detector():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # Lấy thời gian hiện tại
 
     # save the image to a folder
-    filename = f"./image/{timestamp}.jpg"
-    cv2.imwrite(filename, image)
+    # filename = f"./image/{timestamp}.jpg"
+    # cv2.imwrite(filename, image)
 
     # Chuyển ảnh thành dạng bytes (JPEG)
     _, buffer = cv2.imencode('.jpg', image)
@@ -65,8 +65,8 @@ def image_detector():
     confidence_score = prediction[0][index]
 
     # Print prediction and confidence score
-    print("Classification AI: ", class_name, end=" - ")
-    print("Confidence Score:", str(confidence_score * 100   ), "%")
+    print("\n🧠 Classification AI: ", class_name, end=" - ")
+    print("✨ Confidence Score:", str(confidence_score * 100), "%")
 
     # upload image to MongoDB
     upload_image(encoded_string, timestamp, class_name)

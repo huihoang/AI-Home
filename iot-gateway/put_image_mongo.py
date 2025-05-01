@@ -27,9 +27,9 @@ client = MongoClient(mongo_uri, server_api=ServerApi('1'))
 # Kiểm tra kết nối bằng lệnh ping
 try:
     client.admin.command('ping')
-    print("Đa ket noi thanh cong toi MongoDB Atlas!")
+    print("✅ Ket noi thanh cong MongoDB Atlas!")
 except Exception as e:
-    print("Loi ket noi MongoDB:", e)
+    print("❌ Loi ket noi MongoDB:", e)
     exit(1)
 
 # Chọn database 
@@ -44,10 +44,10 @@ def upload_image(image, timestamp, class_name):
             "timestamp": timestamp,
             "classification": class_name
         }).inserted_id
-        print(f"Uploaded image to Mongo with ID: {image_id}")
+        print(f"\n🚀 Uploaded image to Mongo with ID: {image_id}")
         return image_id
     except Exception as e:
-        print("Error upload image:", e)
+        print("❌ Error upload image:", e)
 
 #download
 # Giải mã Base64 và lưu lại thành file ảnh

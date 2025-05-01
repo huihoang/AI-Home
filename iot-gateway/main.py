@@ -7,31 +7,31 @@ from simple_ai import *
 # Khai báo thông tin kết nối với Adafruit IO
 AIO_FEED_IDS = ["SENSOR_CAMERA", "SENSOR_MOTION", "BBC_LED"]
 AIO_USERNAME = "hoangbk4"
-AIO_KEY = "aio_gHTu34YaNcBEE7lzl9H402OuchQq"
+AIO_KEY = "aio_NktQ198Ae5QxTKhm89KSrOm6pxnl"
 
 #================================================================================================
 # Các hàm callback
 def connected(client):
-    print("Ket noi server thanh cong...")
+    print("✅ Ket noi server thanh cong...")
     for topic in AIO_FEED_IDS:
         client.subscribe(topic)
  
 def subscribe(client , userdata , mid , granted_qos):
-    print("Subscribe feed thanh cong...")
+    print(f"✅ Subscribe feed thanh cong...")
 
 def disconnected(client):
-    print("Ngat ket noi server...")
+    print("❌ Ngat ket noi server...")
     sys.exit (1)
  
 def message(client , feed_id , payload):
-    print("Nhan du lieu: " + payload + ", tu feed: " + feed_id)
+    print("Nhan du lieu tu feed " + feed_id + ": " + payload)
 
     # ser.write((str(payload) + "#").encode())
 
     #! detect person enter home
     if feed_id == "SENSOR_MOTION":
         if payload == "True":
-            print("MOTION detected!")
+            print("\n⚠️ Motion detected!")
             class_name = image_detector()
             client.publish("sensor-camera", class_name)
 
