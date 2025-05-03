@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import User from '../models/users.model.js'
 import emailService from '../utils/emailService.js';
+import logService from '../utils/log.service.js'
 import { error } from 'console';
 import { truncateSync } from 'fs';
 
@@ -27,7 +28,10 @@ const registerUser = async (req, res) => {
       address
     });
 
-
+    await logService.createLog(
+      `User_register`,
+      `User ${user_name} have registered`
+    )
 
     await newUser.save();
 
@@ -114,7 +118,7 @@ const updateUser = async (req, res) => {
     const updatedUser = await user.save();
     await logService.createLog(
       'user_update',
-      `Người dùng cập nhật thông tin cá nhân`,
+      `User ${userId} updated their profile`,
       { user_id: userId }
     );
 
@@ -211,7 +215,11 @@ const resetPassword = async (req, res) => {
 
     await user.save();
 
-
+    await logService.createLog(
+      `User_change_password`,
+      `User ${userId} have changed their password`,
+      {user_id: userId}  
+    )
     res.status(200).json({
       message: 'Password is updated successfully',
     })

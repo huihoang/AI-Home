@@ -5,9 +5,9 @@ const createLog = async (event, message, details = {}) => {
     const log = new Log({
       event,
       message,
-      user_id: details.user_id || null,
-      device_id: details.device_id || null,
-      sensor_id: details.sensor_id || null
+      user_id: details.user_id,
+      device_id: details.device_id ,
+      sensor_id: details.sensor_id 
     });
     
     await log.save();
