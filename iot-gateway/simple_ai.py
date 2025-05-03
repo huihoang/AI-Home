@@ -4,7 +4,7 @@ import numpy as np
 import base64
 from datetime import datetime
 from put_image_mongo import *
-import time
+from datetime import datetime, timezone
 
 # Disable scientific notation for clarity
 np.set_printoptions(suppress=True)
@@ -41,10 +41,10 @@ def image_detector():
     #     camera.release()
     #     cv2.destroyAllWindows()
     
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # Lấy thời gian hiện tại
+    createdAt = datetime.now(timezone.utc).isoformat() # Lấy thời gian hiện tại
 
     # save the image to a folder
-    # filename = f"./image/{timestamp}.jpg"
+    # filename = f"./image/{createdAt}.jpg"
     # cv2.imwrite(filename, image)
 
     # Chuyển ảnh thành dạng bytes (JPEG)
@@ -69,6 +69,5 @@ def image_detector():
     print("✨ Confidence Score:", str(confidence_score * 100), "%")
 
     # upload image to MongoDB
-    upload_image(encoded_string, timestamp, class_name)
+    upload_image(encoded_string, createdAt, class_name)
     return f"{class_name} - {int(confidence_score * 100)}%"
-
