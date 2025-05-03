@@ -36,12 +36,12 @@ except Exception as e:
 db = client["Aihome"]
 collection = db["images"]
 
-def upload_image(image, timestamp, class_name):
+def upload_image(image, createdAt, class_name):
     """Upload ảnh lên MongoDB"""
     try:
         image_id = collection.insert_one({
             "image": image,
-            "timestamp": timestamp,
+            "createdAt": createdAt,
             "classification": class_name
         }).inserted_id
         print(f"\n🚀 Uploaded image to Mongo with ID: {image_id}")
@@ -51,7 +51,7 @@ def upload_image(image, timestamp, class_name):
 
 #download
 # Giải mã Base64 và lưu lại thành file ảnh
-# data = collection.find_one({"timestamp": "20250331_010132"})
+# data = collection.find_one({"createdAt": "2025-04-18T09:40:47.994+00:00"})
 # with open("decoded_image.jpg", "wb") as img_file:
 #     img_file.write(base64.b64decode(data["image"]))
 # print("✅ Ảnh đã được giải mã và lưu lại!")
