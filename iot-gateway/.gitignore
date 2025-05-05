@@ -1,6 +1,7 @@
 # Bỏ qua thư mục venv (ảo hóa Python)
 venv/
 .venv/
+env/
 
 # Bỏ qua cache của Python (__pycache__)
 __pycache__/

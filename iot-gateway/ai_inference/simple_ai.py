@@ -3,14 +3,14 @@ import cv2  # Install opencv-python
 import numpy as np
 import base64
 from datetime import datetime
-from put_image_mongo import *
+from ai_inference.mongo_db.put_image_mongo import *
 from datetime import datetime, timezone
 
 # Disable scientific notation for clarity
 np.set_printoptions(suppress=True)
 
 # Load the model
-model = load_model("keras_Model.h5", compile=False)
+model = load_model("ai_inference/model_camera/keras_Model.h5", compile=False)
 
 # Load the labels
 class_names = ["Have person", "Not have person"]

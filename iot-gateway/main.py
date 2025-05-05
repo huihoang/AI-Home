@@ -2,10 +2,11 @@ import time
 import sys
 from Adafruit_IO import MQTTClient
 import serial.tools.list_ports
-from simple_ai import *
+from ai_inference.simple_ai import image_detector
+from ai_inference.voice_control import predict
 
 # Khai báo thông tin kết nối với Adafruit IO
-AIO_FEED_IDS = ["SENSOR_CAMERA", "SENSOR_MOTION", "BBC_LED"]
+AIO_FEED_IDS = ["SENSOR_CAMERA", "SENSOR_MOTION", "LOG_VOICE", "BUTTON_DOOR", "BUTTON_LED", "BUTTON_FAN"]
 AIO_USERNAME = "hoangbk4"
 AIO_KEY = "aio_NktQ198Ae5QxTKhm89KSrOm6pxnl"
 
@@ -24,16 +25,21 @@ def disconnected(client):
     sys.exit (1)
  
 def message(client , feed_id , payload):
-    print("Nhan du lieu tu feed " + feed_id + ": " + payload)
-
+    print("\n🗯️ Nhan du lieu tu feed " + feed_id + ": " + payload)
     # ser.write((str(payload) + "#").encode())
 
     #! detect person enter home
     if feed_id == "SENSOR_MOTION":
         if payload == "True":
-            print("\n⚠️ Motion detected!")
+            print("⚠️ Motion detected!")
             class_name = image_detector()
             client.publish("sensor-camera", class_name)
+
+    #! handle voice control
+    if feed_id == "LOG_VOICE":
+        print("🗣️ Voice command detected!")
+        command = predict(payload)
+        client.publish(command['device'], command['action'])
 
 #================================================================================================
 # Kết nối với Adafruit IO
@@ -90,13 +96,13 @@ while True:
     
     #! nạp dữ liệu vào feed từ iot gateway
     # value = input("Nhap gia tri: ")
-    # client.publish("bbc-led", value)
+    # client.publish("log-voice", value)
 
     #! nhận diện hình ảnh từ camera
     # class_name = image_detector()
     # client.publish("bbc-camera", class_name)
 
-    #! nhận dữ liệu từ cảm biến nhiệt độ
+    #! nhận dữ liệu từ cảm biến 
     # readSerial()
     # time.sleep(5)
     pass
