@@ -1,36 +1,34 @@
 import mqttClient from "../utils/adafruitService.js";
 import UserConfig from "../models/userConfig.model.js";
 import Notification from "../models/notification.model.js";
-const checkTemperature = async (req, res) => {
+const checkBright = async (req, res) => {
   let isOverThreshold = false;
   let msg = "";
   try {
     mqttClient.client.on("message", async (topic, message) => {
-      if (topic.includes("sensor-temperature")) {
-        const temperature = parseFloat(message.toString());
+      if (topic.includes("sensor-light")) {
+        const bright = parseFloat(message.toString());
         const userId = req.params.user_id;
         // const userId = "67d8458df526a4418561a65d";
         const userConfig = await UserConfig.findOne({ user_id: userId });
         if (!userConfig) return;
 
-        const { high, low } = userConfig.thresholds.temperature;
+        const { high, low } = userConfig.thresholds.brightness;
         console.log("high, low: ", high, low);
-        if (temperature > high) {
-          console.log("Nhiệt độ vượt ngưỡng!");
+        if (bright > high) {
+          console.log("Ánh sáng vượt ngưỡng!");
           isOverThreshold = true;
-          msg = `Nhiệt độ vượt ngưỡng (${temperature}-${high}°C)!`;
-
+          msg = `Ánh sáng vượt ngưỡng cho phép (${bright}-${high})!`;
           const notification = new Notification({
             user_id: userConfig.user_id,
             message: msg,
             status: "unread",
           });
           await notification.save();
-        } else if (temperature < low) {
-          console.log("Nhiệt độ dưới ngưỡng! Gửi thông báo...");
+        } else if (bright < low) {
+          console.log("Ánh sáng dưới ngưỡng!");
           isOverThreshold = true;
-          msg = `Nhiệt độ dưới ngưỡng (${low}-${temperature}°C)!`;
-
+          msg = `Ánh sáng dưới ngưỡng cho phép (${low}-${bright})!`;
           const notification = new Notification({
             user_id: userConfig.user_id,
             message: msg,
@@ -38,7 +36,7 @@ const checkTemperature = async (req, res) => {
           });
           await notification.save();
         } else {
-          console.log("Nhiệt độ ở ngưỡng an toàn");
+          console.log("Ánh sáng ở ngưỡng an toàn");
         }
       }
     });
@@ -49,4 +47,4 @@ const checkTemperature = async (req, res) => {
   }
 };
 
-export default { checkTemperature };
+export default { checkBright };

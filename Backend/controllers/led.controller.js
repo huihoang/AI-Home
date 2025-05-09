@@ -18,9 +18,9 @@ const updatedLedStatus = async (req, res) => {
       );
     });
 
-    console.log(`Đã gửi trạng thái ${status} lên Adafruit IO.`);
+    console.log(`Đã gửi trạng thái đèn (${status}) lên Adafruit IO.`);
     return res.json({
-      message: `Trạng thái ${status} đã được gửi thành công!`,
+      message: `Trạng thái đèn (${status}) đã được gửi thành công!`,
     });
   } catch (error) {
     console.error("Lỗi khi gửi dữ liệu đến Adafruit IO:", error);
