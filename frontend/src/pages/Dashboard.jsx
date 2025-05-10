@@ -55,7 +55,7 @@ const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState(initialState?.selectedDate ? new Date(initialState.selectedDate) : null);
   const [systemHistory, setSystemHistory] = useState(initialState?.systemHistory || []);
   const [detectionHistory, setDetectionHistory] = useState(initialState?.detectionHistory || []);
-  const [sensorDataHistory, setSensorDataHistory] = useState(initialState?.sensorDataHistory || {
+  const [sensorDataHistory, setSensorDataHistory] = useState({
     temperature: [],
     humidity: [],
     brightness: []
@@ -77,6 +77,7 @@ const Dashboard = () => {
         borderColor: 'rgb(255, 99, 132)',
         backgroundColor: 'rgba(255, 99, 132, 0.5)',
         yAxisID: 'y',
+        tension: 0.1
       },
       {
         label: 'Độ ẩm (%)',
@@ -84,6 +85,7 @@ const Dashboard = () => {
         borderColor: 'rgb(54, 162, 235)',
         backgroundColor: 'rgba(54, 162, 235, 0.5)',
         yAxisID: 'y1',
+        tension: 0.1
       },
       {
         label: 'Ánh sáng (%)',
@@ -91,6 +93,7 @@ const Dashboard = () => {
         borderColor: 'rgb(255, 206, 86)',
         backgroundColor: 'rgba(255, 206, 86, 0.5)',
         yAxisID: 'y1',
+        tension: 0.1
       }
     ]
   });
@@ -423,36 +426,70 @@ const Dashboard = () => {
           axios.get(API_URL_HUMIDITY),
           axios.get(API_URL_BRIGHTNESS)
         ]);
-
+    
+        const now = new Date();
+        const timeLabel = format(now, 'HH:mm:ss');
+    
         if (tempRes.data.length > 0) {
           const latestTemperature = parseFloat(tempRes.data[0].value);
           if (latestTemperature !== temperature) {
             setTemperature(latestTemperature);
+            setSensorDataHistory(prev => ({
+              ...prev,
+              temperature: [...prev.temperature.slice(-11), { value: latestTemperature, time: now }]
+            }));
           }
         }
-
+    
         if (humidityRes.data.length > 0) {
           const latestHumidity = parseFloat(humidityRes.data[0].value);
           if (latestHumidity !== humidity) {
-          setHumidity(latestHumidity);
+            setHumidity(latestHumidity);
+            setSensorDataHistory(prev => ({
+              ...prev,
+              humidity: [...prev.humidity.slice(-11), { value: latestHumidity, time: now }]
+            }));
           }
         }
-
+    
         if (brightnessRes.data.length > 0) {
           const latestBrightness = parseFloat(brightnessRes.data[0].value);
           if (latestBrightness !== brightness) {
-          setBrightness(latestBrightness);
+            setBrightness(latestBrightness);
+            setSensorDataHistory(prev => ({
+              ...prev,
+              brightness: [...prev.brightness.slice(-11), { value: latestBrightness, time: now }]
+            }));
           }
         }
+    
+        // Cập nhật biểu đồ
+        setChartData(prev => {
+          const timeLabels = sensorDataHistory.temperature.map(item => format(item.time, 'HH:mm:ss'));
+          
+          return {
+            labels: timeLabels,
+            datasets: [
+              {
+                ...prev.datasets[0],
+                data: sensorDataHistory.temperature.map(item => item.value)
+              },
+              {
+                ...prev.datasets[1],
+                data: sensorDataHistory.humidity.map(item => item.value)
+              },
+              {
+                ...prev.datasets[2],
+                data: sensorDataHistory.brightness.map(item => item.value)
+              }
+            ]
+          };
+        });
+    
       } catch (error) {
         console.error('Error fetching sensor data:', error);
       }
     };
-  
-    fetchData();
-    const intervalId = setInterval(fetchData, 5000);
-  
-    return () => clearInterval(intervalId);
   }, [temperature, humidity, brightness]);
 
   // Calendar logic
@@ -1997,7 +2034,7 @@ const toggleVoiceControl = () => {
             marginBottom: '20px',
             textAlign: 'center',
             fontSize: '20px'
-          }}>BIỂU ĐỒ CẢM BIẾN</h3>
+          }}>BIỂU ĐỒ CẢM BIẾN THEO THỜI GIAN</h3>
           
           <div style={{ height: '300px' }}>
             <Line 
@@ -2009,6 +2046,12 @@ const toggleVoiceControl = () => {
                   intersect: false,
                 },
                 scales: {
+                  x: {
+                    title: {
+                      display: true,
+                      text: 'Thời gian'
+                    }
+                  },
                   y: {
                     type: 'linear',
                     display: true,
@@ -2032,6 +2075,30 @@ const toggleVoiceControl = () => {
                       drawOnChartArea: false,
                     },
                   },
+                },
+                plugins: {
+                  tooltip: {
+                    callbacks: {
+                      label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (label) {
+                          label += ': ';
+                        }
+                        if (context.parsed.y !== null) {
+                          label += context.parsed.y;
+                          if (context.datasetIndex === 0) {
+                            label += '°C';
+                          } else {
+                            label += '%';
+                          }
+                        }
+                        return label;
+                      }
+                    }
+                  },
+                  legend: {
+                    position: 'top',
+                  }
                 }
               }}
             />
