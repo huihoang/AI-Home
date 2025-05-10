@@ -11,10 +11,7 @@ const LoginForm = () => {
   const handleLogin = (e) => {
     e.preventDefault();
     
-    // Lấy danh sách người dùng từ localStorage
     const users = JSON.parse(localStorage.getItem('users')) || [];
-    
-    // Tìm người dùng
     const user = users.find(user => user.username === username);
     
     if (!user) {
@@ -27,7 +24,6 @@ const LoginForm = () => {
       return;
     }
     
-    // Đăng nhập thành công, lưu trạng thái và chuyển hướng
     localStorage.setItem('isLoggedIn', 'true');
     localStorage.setItem('currentUser', JSON.stringify(user));
     navigate('/dashboard');

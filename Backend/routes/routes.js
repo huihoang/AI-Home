@@ -5,7 +5,6 @@ import sensorRoutes from "../routes/device.routes.js";
 import feedRoutes from "../routes/feed.routes.js";
 import ledRoutes from "./led.routes.js";
 import fanRoutes from "./fan.routes.js";
-
 // import mqttClient from "../utils/adafruitService.js";
 const router = express.Router();
 

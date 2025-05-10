@@ -1,29 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { FaUser, FaEdit, FaLock, FaSignOutAlt } from 'react-icons/fa';
+import { FaUser, FaEdit, FaLock, FaSignOutAlt, FaArrowLeft } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import '../components/Infor.css';
 
 const UserInfor = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState({
-    id: 1,
-    name: 'Nguyễn Văn A',
-    email: 'user@example.com',
-    phone: '0123456789',
-    role: 'user',
-    joinDate: '2023-01-15',
-    avatar: null
-  });
-
+  const [user, setUser] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [formData, setFormData] = useState({ ...user });
+  const [formData, setFormData] = useState({});
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('smartHomeUser');
+    const savedUser = JSON.parse(localStorage.getItem('currentUser'));
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
-      setFormData(JSON.parse(savedUser));
+      setUser(savedUser);
+      setFormData(savedUser);
     }
   }, []);
 
@@ -36,8 +27,17 @@ const UserInfor = () => {
   };
 
   const handleSave = () => {
-    setUser(formData);
-    localStorage.setItem('smartHomeUser', JSON.stringify(formData));
+    const updatedUser = { ...formData };
+    setUser(updatedUser);
+    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+    
+    // Update in users array
+    const users = JSON.parse(localStorage.getItem('users')) || [];
+    const updatedUsers = users.map(u => 
+      u.username === updatedUser.username ? updatedUser : u
+    );
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    
     setEditMode(false);
   };
 
@@ -56,18 +56,29 @@ const UserInfor = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('smartHomeUser');
     localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('currentUser');
     navigate('/login');
   };
+
+  if (!user) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className={`account-page ${darkMode ? 'dark-mode' : ''}`}>
       <div className="account-container">
+        <button 
+          className="btn-back"
+          onClick={() => navigate(-1)}
+        >
+          <FaArrowLeft /> Quay lại
+        </button>
+
         <div className="account-header">
           <h2>Thông Tin Tài Khoản</h2>
           <div className="role-badge">
-            <FaUser /> Người dùng
+            <FaUser /> {user.role === 'admin' ? 'Quản trị viên' : 'Người dùng'}
           </div>
         </div>
 
@@ -94,11 +105,21 @@ const UserInfor = () => {
             {editMode ? (
               <>
                 <div className="form-group">
+                  <label>Tên đăng nhập</label>
+                  <input
+                    type="text"
+                    name="username"
+                    value={formData.username || ''}
+                    onChange={handleInputChange}
+                    disabled
+                  />
+                </div>
+                <div className="form-group">
                   <label>Họ và tên</label>
                   <input
                     type="text"
-                    name="name"
-                    value={formData.name}
+                    name="fullName"
+                    value={formData.fullName || ''}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -107,7 +128,7 @@ const UserInfor = () => {
                   <input
                     type="email"
                     name="email"
-                    value={formData.email}
+                    value={formData.email || ''}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -116,14 +137,15 @@ const UserInfor = () => {
                   <input
                     type="tel"
                     name="phone"
-                    value={formData.phone}
+                    value={formData.phone || ''}
                     onChange={handleInputChange}
                   />
                 </div>
               </>
             ) : (
               <>
-                <h3>{user.name}</h3>
+                <h3>{user.fullName || user.username}</h3>
+                <p><strong>Tên đăng nhập:</strong> {user.username}</p>
                 <p><strong>Email:</strong> {user.email}</p>
                 <p><strong>Số điện thoại:</strong> {user.phone}</p>
                 <p><strong>Ngày tham gia:</strong> {new Date(user.joinDate).toLocaleDateString()}</p>

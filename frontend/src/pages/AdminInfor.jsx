@@ -1,22 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { FaUser, FaUserShield, FaEdit, FaLock, FaSignOutAlt, FaHome, FaCog, FaPlus, FaTrash, FaUsers, FaThermometerHalf, FaLightbulb } from 'react-icons/fa';
+import { FaUserShield, FaEdit, FaLock, FaSignOutAlt, FaUsers,FaUser , FaThermometerHalf, FaCog, FaPlus, FaTrash, FaArrowLeft } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import '../components/Infor.css';
 
 const AdminInfor = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState({
-    id: 1,
-    name: 'Admin Nguyễn',
-    email: 'admin@example.com',
-    phone: '0987654321',
-    role: 'admin',
-    joinDate: '2022-01-15',
-    avatar: null
-  });
-
+  const [user, setUser] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [formData, setFormData] = useState({ ...user });
+  const [formData, setFormData] = useState({});
   const [darkMode, setDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
   const [users, setUsers] = useState([]);
@@ -29,22 +20,24 @@ const AdminInfor = () => {
   });
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('smartHomeUser');
+    const savedUser = JSON.parse(localStorage.getItem('currentUser'));
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
-      setFormData(JSON.parse(savedUser));
+      setUser(savedUser);
+      setFormData(savedUser);
     }
-    
-    // Mock data for users and devices
-    setUsers([
-      { id: 1, name: 'Nguyễn Văn A', email: 'user1@example.com', role: 'user', joinDate: '2023-01-15' },
-      { id: 2, name: 'Trần Thị B', email: 'user2@example.com', role: 'user', joinDate: '2023-02-20' }
-    ]);
-    
-    setDevices([
+
+    // Load mock data for admin
+    const mockUsers = [
+      { id: 1, username: 'user1', fullName: 'Nguyễn Văn A', email: 'user1@example.com', phone: '0123456789', role: 'user', joinDate: '2023-01-15' },
+      { id: 2, username: 'user2', fullName: 'Trần Thị B', email: 'user2@example.com', phone: '0987654321', role: 'user', joinDate: '2023-02-20' }
+    ];
+    setUsers(mockUsers);
+
+    const mockDevices = [
       { id: 1, name: 'Đèn phòng khách', type: 'light', status: true, room: 'living_room' },
       { id: 2, name: 'Quạt phòng ngủ', type: 'fan', status: false, room: 'bedroom' }
-    ]);
+    ];
+    setDevices(mockDevices);
   }, []);
 
   const handleInputChange = (e) => {
@@ -56,8 +49,17 @@ const AdminInfor = () => {
   };
 
   const handleSave = () => {
-    setUser(formData);
-    localStorage.setItem('smartHomeUser', JSON.stringify(formData));
+    const updatedUser = { ...formData };
+    setUser(updatedUser);
+    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+    
+    // Update in users array
+    const users = JSON.parse(localStorage.getItem('users')) || [];
+    const updatedUsers = users.map(u => 
+      u.username === updatedUser.username ? updatedUser : u
+    );
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    
     setEditMode(false);
   };
 
@@ -76,8 +78,8 @@ const AdminInfor = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('smartHomeUser');
     localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('currentUser');
     navigate('/login');
   };
 
@@ -114,9 +116,20 @@ const AdminInfor = () => {
     setUsers(users.filter(user => user.id !== id));
   };
 
+  if (!user) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className={`account-page ${darkMode ? 'dark-mode' : ''}`}>
       <div className="account-container">
+        <button 
+          className="btn-back"
+          onClick={() => navigate(-1)}
+        >
+          <FaArrowLeft /> Quay lại
+        </button>
+
         <div className="account-header">
           <h2>Thông Tin Tài Khoản</h2>
           <div className="role-badge">
@@ -129,7 +142,7 @@ const AdminInfor = () => {
             className={`admin-tab ${activeTab === 'profile' ? 'active' : ''}`}
             onClick={() => setActiveTab('profile')}
           >
-            <FaUser /> Thông tin cá nhân
+            <FaUserShield /> Thông tin cá nhân
           </button>
           <button 
             className={`admin-tab ${activeTab === 'users' ? 'active' : ''}`}
@@ -176,11 +189,21 @@ const AdminInfor = () => {
                 {editMode ? (
                   <>
                     <div className="form-group">
+                      <label>Tên đăng nhập</label>
+                      <input
+                        type="text"
+                        name="username"
+                        value={formData.username || ''}
+                        onChange={handleInputChange}
+                        disabled
+                      />
+                    </div>
+                    <div className="form-group">
                       <label>Họ và tên</label>
                       <input
                         type="text"
-                        name="name"
-                        value={formData.name}
+                        name="fullName"
+                        value={formData.fullName || ''}
                         onChange={handleInputChange}
                       />
                     </div>
@@ -189,7 +212,7 @@ const AdminInfor = () => {
                       <input
                         type="email"
                         name="email"
-                        value={formData.email}
+                        value={formData.email || ''}
                         onChange={handleInputChange}
                       />
                     </div>
@@ -198,14 +221,15 @@ const AdminInfor = () => {
                       <input
                         type="tel"
                         name="phone"
-                        value={formData.phone}
+                        value={formData.phone || ''}
                         onChange={handleInputChange}
                       />
                     </div>
                   </>
                 ) : (
                   <>
-                    <h3>{user.name}</h3>
+                    <h3>{user.fullName || user.username}</h3>
+                    <p><strong>Tên đăng nhập:</strong> {user.username}</p>
                     <p><strong>Email:</strong> {user.email}</p>
                     <p><strong>Số điện thoại:</strong> {user.phone}</p>
                     <p><strong>Ngày tham gia:</strong> {new Date(user.joinDate).toLocaleDateString()}</p>
@@ -250,10 +274,14 @@ const AdminInfor = () => {
                 <div key={user.id} className="user-card">
                   <div className="user-info">
                     <div className="user-avatar">
-                      <FaUser />
+                      {user.avatar ? (
+                        <img src={user.avatar} alt="User Avatar" />
+                      ) : (
+                        <FaUser />
+                      )}
                     </div>
                     <div>
-                      <h4>{user.name}</h4>
+                      <h4>{user.fullName || user.username}</h4>
                       <p>{user.email}</p>
                       <p>Tham gia: {new Date(user.joinDate).toLocaleDateString()}</p>
                     </div>
@@ -291,7 +319,7 @@ const AdminInfor = () => {
               {devices.map(device => (
                 <div key={device.id} className="device-card">
                   <div className="device-icon">
-                    {device.type === 'light' ? <FaLightbulb /> : <FaThermometerHalf />}
+                    {device.type === 'light' ? <FaThermometerHalf /> : <FaThermometerHalf />}
                   </div>
                   <div className="device-info">
                     <h4>{device.name}</h4>

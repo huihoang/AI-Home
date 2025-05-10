@@ -1,18 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaSearch, FaBell, FaMoon, FaSun, FaUserCircle, FaSignOutAlt } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+
 const Navbar = ({ onDarkModeToggle, darkMode }) => {
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [userMenuVisible, setUserMenuVisible] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    if (user) {
+      setCurrentUser(user);
+    }
+  }, []);
+
   const handleLogout = () => {
-    // Xóa thông tin đăng nhập
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('currentUser');
-    // Chuyển hướng về trang đăng nhập
     navigate('/login');
+  };
+
+  const goToProfile = () => {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    if (user?.role === 'admin') {
+      navigate('/admin-infor');
+    } else {
+      navigate('/user-infor');
+    }
   };
 
   return (
@@ -28,7 +44,7 @@ const Navbar = ({ onDarkModeToggle, darkMode }) => {
       top: 0,
       zIndex: 1000,
     }}>
-      {/* Search Bar (giữ nguyên) */}
+      {/* Search Bar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
         <div style={{
           display: 'flex',
@@ -59,7 +75,7 @@ const Navbar = ({ onDarkModeToggle, darkMode }) => {
 
       {/* Right Section */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-        {/* Dark Mode Toggle (giữ nguyên) */}
+        {/* Dark Mode Toggle */}
         <button
           onClick={() => onDarkModeToggle(!darkMode)}
           style={{
@@ -80,7 +96,7 @@ const Navbar = ({ onDarkModeToggle, darkMode }) => {
           )}
         </button>
 
-        {/* Notifications (giữ nguyên) */}
+        {/* Notifications */}
         <div style={{ position: 'relative' }}>
           <button
             onClick={() => setNotificationsVisible(!notificationsVisible)}
@@ -120,64 +136,98 @@ const Navbar = ({ onDarkModeToggle, darkMode }) => {
           )}
         </div>
 
-        {/* User Avatar với dropdown menu */}
-        <div style={{ position: 'relative' }}>
-          <div 
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              cursor: 'pointer'
-            }}
-            onClick={() => setUserMenuVisible(!userMenuVisible)}
-          >
-            <FaUserCircle size={32} />
-            <span style={{ 
-              fontWeight: 600,
-              fontSize: '14px',
-              color: darkMode ? 'white' : '#2f3542'
-            }}>
-              John Doe
-            </span>
-          </div>
-          
-          {/* Dropdown menu */}
-          {userMenuVisible && (
-            <div style={{
-              position: 'absolute',
-              right: 0,
-              top: '40px',
-              width: '200px',
-              backgroundColor: darkMode ? '#2f3542' : 'white',
-              borderRadius: '8px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-              padding: '8px 0',
-              zIndex: 1001,
-              border: darkMode ? '1px solid #57606f' : '1px solid #f1f2f6'
-            }}>
-              <button
-                onClick={handleLogout}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  width: '100%',
-                  padding: '8px 16px',
-                  background: 'none',
-                  border: 'none',
-                  color: darkMode ? 'white' : '#2f3542',
-                  cursor: 'pointer',
-                  ':hover': {
-                    backgroundColor: darkMode ? '#57606f' : '#f1f2f6'
-                  }
-                }}
-              >
-                <FaSignOutAlt />
-                <span>Đăng xuất</span>
-              </button>
+        {/* User Avatar with dropdown menu */}
+        {currentUser && (
+          <div style={{ position: 'relative' }}>
+            <div 
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: 'pointer'
+              }}
+              onClick={() => setUserMenuVisible(!userMenuVisible)}
+            >
+              {currentUser.avatar ? (
+                <img 
+                  src={currentUser.avatar} 
+                  alt="User Avatar"
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    objectFit: 'cover'
+                  }}
+                />
+              ) : (
+                <FaUserCircle size={32} />
+              )}
+              <span style={{ 
+                fontWeight: 600,
+                fontSize: '14px',
+                color: darkMode ? 'white' : '#2f3542'
+              }}>
+                {currentUser.fullName || currentUser.username}
+              </span>
             </div>
-          )}
-        </div>
+            
+            {userMenuVisible && (
+              <div style={{
+                position: 'absolute',
+                right: 0,
+                top: '40px',
+                width: '200px',
+                backgroundColor: darkMode ? '#2f3542' : 'white',
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                padding: '8px 0',
+                zIndex: 1001,
+                border: darkMode ? '1px solid #57606f' : '1px solid #f1f2f6'
+              }}>
+                <button
+                  onClick={goToProfile}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    padding: '8px 16px',
+                    background: 'none',
+                    border: 'none',
+                    color: darkMode ? 'white' : '#2f3542',
+                    cursor: 'pointer',
+                    ':hover': {
+                      backgroundColor: darkMode ? '#57606f' : '#f1f2f6'
+                    }
+                  }}
+                >
+                  <FaUserCircle />
+                  <span>Thông tin cá nhân</span>
+                </button>
+                <button
+                  onClick={handleLogout}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    padding: '8px 16px',
+                    background: 'none',
+                    border: 'none',
+                    color: darkMode ? 'white' : '#2f3542',
+                    cursor: 'pointer',
+                    ':hover': {
+                      backgroundColor: darkMode ? '#57606f' : '#f1f2f6'
+                    }
+                  }}
+                >
+                  <FaSignOutAlt />
+                  <span>Đăng xuất</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

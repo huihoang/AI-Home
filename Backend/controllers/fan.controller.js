@@ -4,8 +4,7 @@ const updatedFanStatus = async (req, res) => {
   try {
     const { status } = req.body;
     console.log(status);
-    if (status !== "ON" && status !== "OFF") {
-
+    if (status !== "ON" || status !== "OFF") {
       return res.status(400).json({ message: "Trạng thái không hợp lệ" });
     }
     await new Promise((resolve, reject) => {

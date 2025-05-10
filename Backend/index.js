@@ -7,8 +7,7 @@ import {initializeSocket} from './middleware/socket.js'
 dotenv.config();
 import connectDB from "./config/db.js";
 import router from './routes/routes.js';
-import ledRoutes from './routes/led.routes.js';
-import fanRoutes from './routes/fan.routes.js';
+
 
 
 const app = express();
@@ -20,8 +19,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(morgan());
 app.use(router);
-app.use('/api/led', ledRoutes);
-app.use('/api/fan', fanRoutes);
 app.use((req, res, next) => {
     req.io = io;
     next();

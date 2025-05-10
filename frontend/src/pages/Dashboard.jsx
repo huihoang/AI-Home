@@ -3,85 +3,457 @@ import { useState, useEffect, useRef } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay } from 'date-fns';
 import Navbar from '../components/Navbar';
 import axios from 'axios';
+import { useMemo } from 'react';
+import { useCallback } from 'react';
+import { Line, Bar } from 'react-chartjs-2';
+import { Chart, registerables } from 'chart.js';
+Chart.register(...registerables);
 
 const API_URL_TEMP = "https://io.adafruit.com/api/v2/hoangbk4/feeds/sensor-temperature/data";
 const API_URL_HUMIDITY = "https://io.adafruit.com/api/v2/hoangbk4/feeds/sensor-humidity/data";
 const API_URL_BRIGHTNESS = "https://io.adafruit.com/api/v2/hoangbk4/feeds/sensor-light/data";
 
+const loadDashboardState = () => {
+  const savedState = localStorage.getItem('dashboardState');
+  if (savedState) {
+    try {
+      return JSON.parse(savedState);
+    } catch (e) {
+      console.error('Failed to parse saved state', e);
+      return null;
+    }
+  }
+  return null;
+};
+const saveDashboardState = (state) => {
+  try {
+    localStorage.setItem('dashboardState', JSON.stringify(state));
+  } catch (e) {
+    console.error('Failed to save state', e);
+  }
+};
 const Dashboard = () => {
-  const [ledStatus, setLedStatus] = useState(false);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [calendarDays, setCalendarDays] = useState([]);
+  const initialState = loadDashboardState();
   const today = new Date();
-  const [fanStatus, setFanStatus] = useState(false);
-  const [fanSpeed, setFanSpeed] = useState(0);
-  const [darkMode, setDarkMode] = useState(false);
-  const [temperature, setTemperature] = useState(null);
-  const [humidity, setHumidity] = useState(null);
-  const [brightness, setBrightness] = useState(null);
-  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const [ledStatus, setLedStatus] = useState(initialState?.ledStatus || false);
+  const [currentDate, setCurrentDate] = useState(initialState?.currentDate ? new Date(initialState.currentDate) : new Date(today.getFullYear(), today.getMonth()));
+  const [calendarDays, setCalendarDays] = useState([]);
+  const [fanStatus, setFanStatus] = useState(initialState?.fanStatus || false);
+  const [fanSpeed, setFanSpeed] = useState(initialState?.fanSpeed || 0);
+  const [darkMode, setDarkMode] = useState(initialState?.darkMode || false);
+  const [temperature, setTemperature] = useState(initialState?.temperature || null);
+  const [humidity, setHumidity] = useState(initialState?.humidity || null);
+  const [brightness, setBrightness] = useState(initialState?.brightness || null);
+  const [currentSlide, setCurrentSlide] = useState(initialState?.currentSlide || 0);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isRecording, setIsRecording] = useState(false);
-  const [doorStatus, setDoorStatus] = useState(false);
-  const [fanLevel, setFanLevel] = useState(1);
   const recognitionRef = useRef(null);
-  const [notes, setNotes] = useState({});
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [showNoteModal, setShowNoteModal] = useState(false);
-  const [currentNote, setCurrentNote] = useState('');
+  const [doorStatus, setDoorStatus] = useState(initialState?.doorStatus || false);
+  const [fanLevel, setFanLevel] = useState(initialState?.fanLevel || 1);
+  const [notes, setNotes] = useState(initialState?.notes || {});
+  const [selectedDate, setSelectedDate] = useState(initialState?.selectedDate ? new Date(initialState.selectedDate) : null);
+  const [systemHistory, setSystemHistory] = useState(initialState?.systemHistory || []);
+  const [detectionHistory, setDetectionHistory] = useState(initialState?.detectionHistory || []);
+  const [sensorDataHistory, setSensorDataHistory] = useState(initialState?.sensorDataHistory || {
+    temperature: [],
+    humidity: [],
+    brightness: []
+  });
+  const [transcript, setTranscript] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [commandFeedback, setCommandFeedback] = useState(null);
+  const timeRef = useRef(new Date());
+  const [displayTime, setDisplayTime] = useState(format(new Date(), 'HH:mm:ss'));
+  const [activeSlide, setActiveSlide] = useState(currentSlide);
+
+
+  const [chartData, setChartData] = useState({
+    labels: [],
+    datasets: [
+      {
+        label: 'Nhiệt độ (°C)',
+        data: [],
+        borderColor: 'rgb(255, 99, 132)',
+        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+        yAxisID: 'y',
+      },
+      {
+        label: 'Độ ẩm (%)',
+        data: [],
+        borderColor: 'rgb(54, 162, 235)',
+        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+        yAxisID: 'y1',
+      },
+      {
+        label: 'Ánh sáng (%)',
+        data: [],
+        borderColor: 'rgb(255, 206, 86)',
+        backgroundColor: 'rgba(255, 206, 86, 0.5)',
+        yAxisID: 'y1',
+      }
+    ]
+  });
+  const [activityChartData, setActivityChartData] = useState({
+    labels: ['Đèn', 'Quạt', 'Cửa'],
+    datasets: [
+      {
+        label: 'Số lần bật',
+        data: [0, 0, 0],
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.5)',
+          'rgba(54, 162, 235, 0.5)',
+          'rgba(255, 206, 86, 0.5)',
+        ],
+        borderColor: [
+          'rgba(255, 99, 132, 1)',
+          'rgba(54, 162, 235, 1)',
+          'rgba(255, 206, 86, 1)',
+        ],
+        borderWidth: 1,
+      }
+    ]
+  });
+  const stateToSave = useMemo(() => ({
+    ledStatus,
+    currentDate: currentDate.getTime(),
+    fanStatus,
+    fanSpeed,
+    darkMode,
+    temperature,
+    humidity,
+    brightness,
+    currentSlide,
+    doorStatus,
+    fanLevel,
+    notes,
+    selectedDate: selectedDate?.getTime(),
+    systemHistory,
+    detectionHistory,
+    sensorDataHistory
+  }), [
+    ledStatus, currentDate, fanStatus, fanSpeed, darkMode, temperature,
+    humidity, brightness, currentSlide, doorStatus, fanLevel, notes,
+    selectedDate, systemHistory, detectionHistory, sensorDataHistory
+  ]);
+  useEffect(() => {
+    setActiveSlide(currentSlide);
+  }, [currentSlide]);
+  
+  useEffect(() => {
+    let timer;
+    if (activeSlide === 1) {
+      timer = setInterval(() => {
+        timeRef.current = new Date();
+        setDisplayTime(format(timeRef.current, 'HH:mm:ss'));
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [activeSlide]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      saveDashboardState(stateToSave);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [stateToSave]);
+  useEffect(() => {
+    return () => {
+      // Lưu state cuối cùng trước khi unmount
+      const stateToSave = {
+        ledStatus,
+        currentDate: currentDate.getTime(),
+        fanStatus,
+        fanSpeed,
+        darkMode,
+        temperature,
+        humidity,
+        brightness,
+        currentSlide,
+        doorStatus,
+        fanLevel,
+        notes,
+        selectedDate: selectedDate?.getTime(),
+        systemHistory,
+        detectionHistory,
+        sensorDataHistory
+      };
+      saveDashboardState(stateToSave);
+      
+      // Dừng voice recognition nếu đang chạy
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
+  useEffect(() => {
+    if (!('webkitSpeechRecognition' in window)) {
+      console.error('Trình duyệt không hỗ trợ Web Speech API');
+      return;
+    }
+
+    recognitionRef.current = new window.webkitSpeechRecognition();
+    recognitionRef.current.continuous = true;
+    recognitionRef.current.interimResults = true;
+    recognitionRef.current.lang = 'vi-VN';
+
+    recognitionRef.current.onresult = (event) => {
+      let interimTranscript = '';
+      let finalTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+
+      setTranscript(finalTranscript || interimTranscript);
+      
+      if (finalTranscript) {
+        handleVoiceCommand(finalTranscript);
+      }
+    };
+
+    recognitionRef.current.onerror = (event) => {
+      console.error('Lỗi nhận dạng giọng nói:', event.error);
+      setIsListening(false);
+    };
+
+    recognitionRef.current.onend = () => {
+      if (isListening) {
+        recognitionRef.current.start();
+      }
+    };
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, [isListening]);
+  useEffect(() => {
+    const newEntry = {
+      timestamp: new Date(),
+      event: `Đèn ${ledStatus ? 'bật' : 'tắt'}`,
+      type: 'device'
+    };
+    setSystemHistory(prev => [newEntry, ...prev.slice(0, 99)]);
+    
+    // Cập nhật biểu đồ hoạt động
+    if (ledStatus) {
+      setActivityChartData(prev => {
+        const newData = [...prev.datasets[0].data];
+        newData[0] += 1;
+        return {
+          ...prev,
+          datasets: [{
+            ...prev.datasets[0],
+            data: newData
+          }]
+        };
+      });
+    }
+  }, [ledStatus]);
 
   useEffect(() => {
-    const fetchTemperature = async () => {
-      try {
-        const response = await fetch(API_URL_TEMP);
-        const data = await response.json();
-        if (data.length > 0) {
-          const latestTemperature = parseFloat(data[0].value);
-          setTemperature(latestTemperature);
-        }
-      } catch (error) {
-        console.error('Error fetching temperature data:', error);
-      }
+    const newEntry = {
+      timestamp: new Date(),
+      event: `Quạt ${fanStatus ? 'bật' : 'tắt'}`,
+      type: 'device'
     };
-
-    const fetchHumidity = async () => {
-      try {
-        const response = await fetch(API_URL_HUMIDITY);
-        const data = await response.json();
-        if (data.length > 0) {
-          const latestHumidity = parseFloat(data[0].value);
-          setHumidity(latestHumidity);
-        }
-      } catch (error) {
-        console.error('Error fetching humidity data:', error);
-      }
-    };
+    setSystemHistory(prev => [newEntry, ...prev.slice(0, 99)]);
     
-    const fetchBrightness = async () => {
+    if (fanStatus) {
+      setActivityChartData(prev => {
+        const newData = [...prev.datasets[0].data];
+        newData[1] += 1;
+        return {
+          ...prev,
+          datasets: [{
+            ...prev.datasets[0],
+            data: newData
+          }]
+        };
+      });
+    }
+  }, [fanStatus]);
+
+  useEffect(() => {
+    const newEntry = {
+      timestamp: new Date(),
+      event: `Cửa ${doorStatus ? 'mở' : 'đóng'}`,
+      type: 'device'
+    };
+    setSystemHistory(prev => [newEntry, ...prev.slice(0, 99)]);
+    
+    if (doorStatus) {
+      setActivityChartData(prev => {
+        const newData = [...prev.datasets[0].data];
+        newData[2] += 1;
+        return {
+          ...prev,
+          datasets: [{
+            ...prev.datasets[0],
+            data: newData
+          }]
+        };
+      });
+    }
+  }, [doorStatus]);
+  useEffect(() => {
+    if (temperature !== null) {
+      const newEntry = {
+        timestamp: new Date(),
+        value: temperature,
+        type: 'temperature'
+      };
+      setSensorDataHistory(prev => ({
+        ...prev,
+        temperature: [newEntry, ...prev.temperature.slice(0, 99)]
+      }));
+      
+      // Cập nhật biểu đồ
+      setChartData(prev => {
+        const now = format(new Date(), 'HH:mm');
+        return {
+          ...prev,
+          labels: [now, ...prev.labels.slice(0, 11)],
+          datasets: prev.datasets.map((dataset, idx) => {
+            if (idx === 0) {
+              return {
+                ...dataset,
+                data: [temperature, ...dataset.data.slice(0, 11)]
+              };
+            }
+            return dataset;
+          })
+        };
+      });
+    }
+  }, [temperature]);
+
+  useEffect(() => {
+    if (humidity !== null) {
+      const newEntry = {
+        timestamp: new Date(),
+        value: humidity,
+        type: 'humidity'
+      };
+      setSensorDataHistory(prev => ({
+        ...prev,
+        humidity: [newEntry, ...prev.humidity.slice(0, 99)]
+      }));
+      
+      // Cập nhật biểu đồ
+      setChartData(prev => ({
+        ...prev,
+        datasets: prev.datasets.map((dataset, idx) => {
+          if (idx === 1) {
+            return {
+              ...dataset,
+              data: [humidity, ...dataset.data.slice(0, 11)]
+            };
+          }
+          return dataset;
+        })
+      }));
+    }
+  }, [humidity]);
+
+  useEffect(() => {
+    if (brightness !== null) {
+      const newEntry = {
+        timestamp: new Date(),
+        value: brightness,
+        type: 'brightness'
+      };
+      setSensorDataHistory(prev => ({
+        ...prev,
+        brightness: [newEntry, ...prev.brightness.slice(0, 99)]
+      }));
+      
+      // Cập nhật biểu đồ
+      setChartData(prev => ({
+        ...prev,
+        datasets: prev.datasets.map((dataset, idx) => {
+          if (idx === 2) {
+            return {
+              ...dataset,
+              data: [brightness, ...dataset.data.slice(0, 11)]
+            };
+          }
+          return dataset;
+        })
+      }));
+    }
+  }, [brightness]);
+  useEffect(() => {
+    if (ledStatus) {
+      const interval = setInterval(() => {
+        // 30% khả năng phát hiện người
+        if (Math.random() < 0.3) {
+          const confidence = Math.floor(Math.random() * 30) + 70; // 70-100%
+          const newDetection = {
+            timestamp: new Date(),
+            confidence,
+            image: `https://picsum.photos/200/300?random=${Math.floor(Math.random() * 1000)}`
+          };
+          setDetectionHistory(prev => [newDetection, ...prev.slice(0, 9)]);
+          
+          // Thêm vào lịch sử hệ thống
+          const newEntry = {
+            timestamp: new Date(),
+            event: `Camera phát hiện người (${confidence}%)`,
+            type: 'camera'
+          };
+          setSystemHistory(prev => [newEntry, ...prev.slice(0, 99)]);
+        }
+      }, 10000); // Kiểm tra mỗi 10 giây
+      
+      return () => clearInterval(interval);
+    }
+  }, [ledStatus]);
+  useEffect(() => {
+    const fetchData = async () => {
       try {
-        const response = await fetch(API_URL_BRIGHTNESS);
-        const data = await response.json();
-        if (data.length > 0) {
-          const latestBrightness = parseFloat(data[0].value);
+        const [tempRes, humidityRes, brightnessRes] = await Promise.all([
+          axios.get(API_URL_TEMP),
+          axios.get(API_URL_HUMIDITY),
+          axios.get(API_URL_BRIGHTNESS)
+        ]);
+
+        if (tempRes.data.length > 0) {
+          const latestTemperature = parseFloat(tempRes.data[0].value);
+          if (latestTemperature !== temperature) {
+            setTemperature(latestTemperature);
+          }
+        }
+
+        if (humidityRes.data.length > 0) {
+          const latestHumidity = parseFloat(humidityRes.data[0].value);
+          if (latestHumidity !== humidity) {
+          setHumidity(latestHumidity);
+          }
+        }
+
+        if (brightnessRes.data.length > 0) {
+          const latestBrightness = parseFloat(brightnessRes.data[0].value);
+          if (latestBrightness !== brightness) {
           setBrightness(latestBrightness);
+          }
         }
       } catch (error) {
-        console.error('Error fetching brightness data:', error);
+        console.error('Error fetching sensor data:', error);
       }
     };
-
-    fetchTemperature();
-    fetchHumidity();
-    fetchBrightness();
-
-    const intervalId = setInterval(() => {
-      fetchTemperature();
-      fetchHumidity();
-      fetchBrightness();
-    }, 5000);
-
+  
+    fetchData();
+    const intervalId = setInterval(fetchData, 5000);
+  
     return () => clearInterval(intervalId);
-  }, []);
+  }, [temperature, humidity, brightness]);
 
   // Calendar logic
   // Load ghi chú từ localStorage khi khởi động
@@ -202,35 +574,72 @@ useEffect(() => {
     
     setCalendarDays([...emptyDays, ...days]);
   }, [currentDate]);
+  useEffect(() => {
+    const savedNotes = localStorage.getItem('calendarNotes');
+    if (savedNotes) {
+      try {
+        setNotes(JSON.parse(savedNotes));
+      } catch (e) {
+        console.error('Failed to parse saved notes', e);
+      }
+    }
+  }, []);
 
-  const toggleLED = async () => {
+  useEffect(() => {
+    localStorage.setItem('calendarNotes', JSON.stringify(notes));
+  }, [notes]);
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      setTranscript('');
+      recognitionRef.current.start();
+      setIsListening(true);
+    }
+  };
+
+  
+  const toggleLED = useCallback(async () => {
     const newStatus = !ledStatus;
     setLedStatus(newStatus);
+  
+    const newEntry = {
+      timestamp: new Date(),
+      event: `Đèn ${newStatus ? 'bật' : 'tắt'}`,
+      type: 'device'
+    };
+    setSystemHistory(prev => [newEntry, ...prev.slice(0, 99)]);
   
     try {
       await axios.post("http://localhost:8080/api/led/update-status", {
         status: newStatus ? '1' : '0'
       });
-      
-      console.log(`LED đã được ${newStatus ? 'bật' : 'tắt'}`);
     } catch (error) {
       console.error('Lỗi khi gửi yêu cầu điều khiển LED:', error);
     }
-  };
-  
-  const toggleFan = async (forceStatus = null) => {
-  const newStatus = forceStatus !== null ? forceStatus : !fanStatus;
-  setFanStatus(newStatus);
+  }, [ledStatus]);
 
-  try {
-    await axios.post("http://localhost:8080/api/fan/update-status", {
-      status: newStatus ? "ON" : "OFF"
-    });
-    console.log(`Quạt đã được ${newStatus ? 'bật' : 'tắt'}`);
-  } catch (error) {
-    console.error('Lỗi khi gửi yêu cầu điều khiển quạt:', error);
-  }
-};
+  
+  const toggleFan = useCallback(async (forceStatus = null) => {
+    const newStatus = forceStatus !== null ? forceStatus : !fanStatus;
+    setFanStatus(newStatus);
+  
+    const newEntry = {
+      timestamp: new Date(),
+      event: `Quạt ${newStatus ? 'bật' : 'tắt'}`,
+      type: 'device'
+    };
+    setSystemHistory(prev => [newEntry, ...prev.slice(0, 99)]);
+  
+    try {
+      await axios.post("http://localhost:8080/api/fan/update-status", {
+        status: newStatus ? "ON" : "OFF"
+      });
+    } catch (error) {
+      console.error('Lỗi khi gửi yêu cầu điều khiển quạt:', error);
+    }
+  }, [fanStatus]);
 
   
   const handleLogout = () => {
@@ -274,28 +683,89 @@ const toggleVoiceControl = () => {
   };
 
   const handleVoiceCommand = (command) => {
-    if (command.includes('bật đèn')) {
-      setLedStatus(true);
-    } else if (command.includes('tắt đèn')) {
-      setLedStatus(false);
-    } else if (command.includes('bật quạt')) {
-      setFanStatus(true);
-    } else if (command.includes('tắt quạt')) {
-      setFanStatus(false);
-    } else if (command.includes('mở cửa')) {
-      setDoorStatus(true);
-      setTimeout(() => setDoorStatus(false), 3000); // Tự động đóng sau 3s
-    } else if (command.includes('đóng cửa')) {
-      setDoorStatus(false);
-    } else if (command.includes('quạt mức 1')) {
-      setFanLevel(1);
-    } else if (command.includes('quạt mức 2')) {
-      setFanLevel(2);
-    } else if (command.includes('quạt mức 3')) {
-      setFanLevel(3);
-    } else if (command.includes('quạt mức 4')) {
-      setFanLevel(4);
+    const normalizedCommand = command.toLowerCase().trim();
+    let actionTaken = false;
+    let feedbackMessage = '';
+    
+    // Điều khiển đèn
+    if (normalizedCommand.includes('bật đèn')) {
+      if (!ledStatus) {
+        toggleLED();
+        feedbackMessage = 'Đã bật đèn';
+        actionTaken = true;
+      }
+    } else if (normalizedCommand.includes('tắt đèn')) {
+      if (ledStatus) {
+        toggleLED();
+        feedbackMessage = 'Đã tắt đèn';
+        actionTaken = true;
+      }
     }
+    // Điều khiển quạt
+    else if (normalizedCommand.includes('bật quạt')) {
+      if (!fanStatus) {
+        toggleFan();
+        feedbackMessage = 'Đã bật quạt';
+        actionTaken = true;
+      }
+    } else if (normalizedCommand.includes('tắt quạt')) {
+      if (fanStatus) {
+        toggleFan();
+        feedbackMessage = 'Đã tắt quạt';
+        actionTaken = true;
+      }
+    }
+    // Điều chỉnh tốc độ quạt
+    else if (normalizedCommand.match(/quạt mức (\d)/)) {
+      const fanLevelMatch = normalizedCommand.match(/quạt mức (\d)/);
+      const level = parseInt(fanLevelMatch[1]);
+      if (level >= 1 && level <= 4) {
+        setFanLevel(level);
+        if (!fanStatus) toggleFan(true);
+        feedbackMessage = `Đã đặt quạt mức ${level}`;
+        actionTaken = true;
+      }
+    }
+    // Điều khiển cửa
+    else if (normalizedCommand.includes('mở cửa')) {
+      if (!doorStatus) {
+        setDoorStatus(true);
+        feedbackMessage = 'Đã mở cửa (tự động đóng sau 5 giây)';
+        actionTaken = true;
+        setTimeout(() => {
+          setDoorStatus(false);
+          setCommandFeedback({
+            command: 'auto',
+            result: 'Cửa đã tự động đóng',
+            timestamp: new Date()
+          });
+        }, 5000);
+      }
+    } else if (normalizedCommand.includes('đóng cửa')) {
+      if (doorStatus) {
+        setDoorStatus(false);
+        feedbackMessage = 'Đã đóng cửa';
+        actionTaken = true;
+      }
+    }
+
+    if (actionTaken) {
+      const newEntry = {
+        timestamp: new Date(),
+        event: `Lệnh thoại: "${normalizedCommand}" - ${feedbackMessage}`,
+        type: 'voice'
+      };
+      setSystemHistory(prev => [newEntry, ...prev.slice(0, 99)]);
+      
+      setCommandFeedback({
+        command: normalizedCommand,
+        result: feedbackMessage,
+        timestamp: new Date()
+      });
+    }
+
+    // Tự động ẩn feedback sau 3 giây
+    setTimeout(() => setCommandFeedback(null), 3000);
   };
   useEffect(() => {
     const speedMap = { 1: 25, 2: 50, 3: 75, 4: 100 };
@@ -348,16 +818,16 @@ const toggleVoiceControl = () => {
     </div>
   );
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev === 3 ? 0 : prev + 1));
+    setCurrentSlide((prev) => (prev === 4 ? 0 : prev + 1));
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev === 0 ? 3 : prev - 1));
+    setCurrentSlide((prev) => (prev === 0 ? 4 : prev - 1));
   };
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 1000);
+    }, 10000);
 
     return () => clearInterval(timer);
   }, []);
@@ -1365,6 +1835,246 @@ const toggleVoiceControl = () => {
   
         {/* Voice Control */}
         <div style={{ 
+      ...cardStyle,
+      backgroundColor: darkMode ? '#2f3542' : 'white',
+      padding: '25px',
+      borderRadius: '12px',
+      boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
+      gridColumn: '1 / -1'
+    }}>
+      <div style={{ 
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: '20px'
+      }}>
+        <span style={{ 
+          fontSize: '24px',
+          marginRight: '10px'
+        }}>🎤</span>
+        <h3 style={{ 
+          ...sensorTitleStyle,
+          margin: '0',
+          fontSize: '20px'
+        }}>ĐIỀU KHIỂN BẰNG GIỌNG NÓI</h3>
+      </div>
+      
+      <div style={{ 
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        padding: '0 20px'
+      }}>
+        <button
+          onClick={toggleListening}
+          style={{
+            width: '120px',
+            height: '120px',
+            borderRadius: '50%',
+            backgroundColor: isListening ? '#ff4757' : '#2ed573',
+            border: 'none',
+            color: 'white',
+            fontSize: '18px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '20px',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 8px 20px rgba(0,0,0,0.2)',
+            ':hover': {
+              transform: 'scale(1.05)'
+            }
+          }}
+        >
+          {isListening ? (
+            <>
+              <div style={{ 
+                fontSize: '36px', 
+                marginBottom: '5px',
+                animation: 'pulse 1.5s infinite'
+              }}>🎤</div>
+              <div>ĐANG NGHE...</div>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: '36px', marginBottom: '5px' }}>🎤</div>
+              <div>BẤM ĐỂ NÓI</div>
+            </>
+          )}
+        </button>
+        
+        <div style={{ 
+          width: '100%',
+          minHeight: '60px',
+          padding: '15px',
+          backgroundColor: darkMode ? '#3d4852' : '#f1f2f6',
+          borderRadius: '8px',
+          marginBottom: '20px',
+          textAlign: 'center'
+        }}>
+          {transcript ? (
+            <div style={{ color: darkMode ? 'white' : '#2f3542' }}>{transcript}</div>
+          ) : (
+            <div style={{ color: darkMode ? '#a4b0be' : '#57606f' }}>
+              {isListening ? 'Đang nghe... Hãy ra lệnh' : 'Nhấn nút và ra lệnh bằng giọng nói'}
+            </div>
+          )}
+        </div>
+        
+        <div style={{
+          width: '100%',
+          backgroundColor: darkMode ? '#3d4852' : '#f1f2f6',
+          borderRadius: '8px',
+          padding: '15px',
+          marginBottom: '10px'
+        }}>
+          <h4 style={{
+            marginTop: '0',
+            marginBottom: '10px',
+            color: darkMode ? 'white' : '#2f3542',
+            textAlign: 'center'
+          }}>CÁC LỆNH HỖ TRỢ</h4>
+          <ul style={{
+            paddingLeft: '20px',
+            margin: '0',
+            color: darkMode ? '#a4b0be' : '#57606f',
+            fontSize: '14px'
+          }}>
+            <li>"Bật đèn" - Bật đèn LED</li>
+            <li>"Tắt đèn" - Tắt đèn LED</li>
+            <li>"Bật quạt" - Bật quạt</li>
+            <li>"Tắt quạt" - Tắt quạt</li>
+            <li>"Quạt mức 1" đến "Quạt mức 4" - Đặt tốc độ quạt</li>
+            <li>"Mở cửa" - Mở cửa (tự động đóng sau 5 giây)</li>
+            <li>"Đóng cửa" - Đóng cửa ngay lập tức</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    </div>
+    </div>
+  );
+  const HistorySlide = () => (
+    <div style={{ 
+      ...slideStyle,
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'flex-start',
+      alignItems: 'center',
+      padding: '30px 20px',
+      overflowY: 'auto'
+    }}>
+      <h2 style={{ 
+        color: darkMode ? 'white' : '#2f3542',
+        margin: '0 0 30px 0',
+        textAlign: 'center',
+        fontSize: '28px',
+        fontWeight: '600',
+        letterSpacing: '1px'
+      }}>LỊCH SỬ HOẠT ĐỘNG</h2>
+      
+      <div style={{ 
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+        gap: '30px',
+        width: '100%',
+        maxWidth: '1200px'
+      }}>
+        {/* Biểu đồ cảm biến */}
+        <div style={{ 
+          ...cardStyle,
+          backgroundColor: darkMode ? '#2f3542' : 'white',
+          padding: '25px',
+          borderRadius: '12px',
+          boxShadow: '0 8px 20px rgba(0,0,0,0.1)'
+        }}>
+          <h3 style={{ 
+            color: darkMode ? 'white' : '#2f3542',
+            marginTop: '0',
+            marginBottom: '20px',
+            textAlign: 'center',
+            fontSize: '20px'
+          }}>BIỂU ĐỒ CẢM BIẾN</h3>
+          
+          <div style={{ height: '300px' }}>
+            <Line 
+              data={chartData}
+              options={{
+                responsive: true,
+                interaction: {
+                  mode: 'index',
+                  intersect: false,
+                },
+                scales: {
+                  y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                      display: true,
+                      text: 'Nhiệt độ (°C)'
+                    }
+                  },
+                  y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    min: 0,
+                    max: 100,
+                    title: {
+                      display: true,
+                      text: 'Độ ẩm/Ánh sáng (%)'
+                    },
+                    grid: {
+                      drawOnChartArea: false,
+                    },
+                  },
+                }
+              }}
+            />
+          </div>
+        </div>
+        
+        {/* Biểu đồ hoạt động */}
+        <div style={{ 
+          ...cardStyle,
+          backgroundColor: darkMode ? '#2f3542' : 'white',
+          padding: '25px',
+          borderRadius: '12px',
+          boxShadow: '0 8px 20px rgba(0,0,0,0.1)'
+        }}>
+          <h3 style={{ 
+            color: darkMode ? 'white' : '#2f3542',
+            marginTop: '0',
+            marginBottom: '20px',
+            textAlign: 'center',
+            fontSize: '20px'
+          }}>HOẠT ĐỘNG THIẾT BỊ</h3>
+          
+          <div style={{ height: '300px' }}>
+            <Bar 
+              data={activityChartData}
+              options={{
+                responsive: true,
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    title: {
+                      display: true,
+                      text: 'Số lần bật'
+                    }
+                  }
+                }
+              }}
+            />
+          </div>
+        </div>
+        
+        {/* Lịch sử hoạt động */}
+        <div style={{ 
           ...cardStyle,
           backgroundColor: darkMode ? '#2f3542' : 'white',
           padding: '25px',
@@ -1372,86 +2082,61 @@ const toggleVoiceControl = () => {
           boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
           gridColumn: '1 / -1'
         }}>
-          <div style={{ 
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: '20px'
-          }}>
-            <span style={{ 
-              fontSize: '24px',
-              marginRight: '10px'
-            }}>🎤</span>
-            <h3 style={{ 
-              ...sensorTitleStyle,
-              margin: '0',
-              fontSize: '20px'
-            }}>ĐIỀU KHIỂN BẰNG GIỌNG NÓI</h3>
-          </div>
+          <h3 style={{ 
+            color: darkMode ? 'white' : '#2f3542',
+            marginTop: '0',
+            marginBottom: '20px',
+            textAlign: 'center',
+            fontSize: '20px'
+          }}>LỊCH SỬ HỆ THỐNG</h3>
           
           <div style={{ 
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            padding: '0 20px'
+            height: '300px',
+            overflowY: 'auto',
+            padding: '10px',
+            backgroundColor: darkMode ? '#3d4852' : '#f1f2f6',
+            borderRadius: '8px'
           }}>
-            <button
-              onClick={toggleVoiceControl}
-              style={{
-                width: '120px',
-                height: '120px',
-                borderRadius: '50%',
-                backgroundColor: isRecording ? '#ff4757' : '#2ed573',
-                border: 'none',
-                color: 'white',
-                fontSize: '18px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
+            {systemHistory.length > 0 ? (
+              systemHistory.map((entry, index) => (
+                <div 
+                  key={index}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    padding: '10px',
+                    borderBottom: `1px solid ${darkMode ? '#57606f' : '#dfe4ea'}`,
+                    fontSize: '14px'
+                  }}
+                >
+                  <span style={{ color: darkMode ? '#a4b0be' : '#57606f' }}>
+                    {format(new Date(entry.timestamp), 'HH:mm:ss')}
+                  </span>
+                  <span style={{ 
+                    color: entry.type === 'camera' ? '#ff4757' : 
+                          entry.type === 'device' ? '#2ed573' : 
+                          darkMode ? 'white' : '#2f3542'
+                  }}>
+                    {entry.event}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div style={{ 
+                height: '100%',
                 display: 'flex',
-                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginBottom: '20px',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 8px 20px rgba(0,0,0,0.2)',
-                ':hover': {
-                  transform: 'scale(1.05)'
-                }
-              }}
-            >
-              {isRecording ? (
-                <>
-                  <div style={{ 
-                    fontSize: '36px', 
-                    marginBottom: '5px',
-                    animation: 'pulse 1.5s infinite'
-                  }}>🎤</div>
-                  <div>ĐANG NGHE...</div>
-                </>
-              ) : (
-                <>
-                  <div style={{ fontSize: '36px', marginBottom: '5px' }}>🎤</div>
-                  <div>BẤM ĐỂ NÓI</div>
-                </>
-              )}
-            </button>
-            
-            <div style={{ 
-              textAlign: 'center',
-              color: darkMode ? '#a4b0be' : '#57606f',
-              fontSize: '16px',
-              marginBottom: '20px'
-            }}>
-              {isRecording ? 'Hãy ra lệnh bằng giọng nói...' : 'Nhấn vào micro và ra lệnh bằng giọng nói'}
-            </div>
-  
-            
+                color: darkMode ? '#a4b0be' : '#57606f'
+              }}>
+                Chưa có dữ liệu lịch sử
+              </div>
+            )}
           </div>
         </div>
       </div>
     </div>
   );
-
   const CameraSlide = () => (
     <div style={{ 
       ...slideStyle,
@@ -1616,35 +2301,57 @@ const toggleVoiceControl = () => {
             marginTop: '0',
             marginBottom: '15px',
             fontSize: '18px'
-          }}>LỊCH SỬ HOẠT ĐỘNG</h3>
-          <div style={{
-            height: '150px',
-            overflowY: 'auto',
-            padding: '10px',
-            backgroundColor: darkMode ? '#3d4852' : '#f1f2f6',
-            borderRadius: '8px'
-          }}>
+          }}>PHÁT HIỆN NGƯỜI</h3>
+          
+          {detectionHistory.length > 0 ? (
             <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              padding: '8px 0',
-              borderBottom: `1px solid ${darkMode ? '#57606f' : '#dfe4ea'}`,
-              fontSize: '14px'
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+              gap: '15px'
             }}>
-              <span>12:30:45 - Phát hiện chuyển động</span>
-              <span style={{ color: '#ff4757' }}>Cảnh báo</span>
+              {detectionHistory.map((detection, index) => (
+                <div key={index} style={{
+                  position: 'relative',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                }}>
+                  <img 
+                    src={detection.image} 
+                    alt={`Detection ${index}`}
+                    style={{
+                      width: '100%',
+                      height: '120px',
+                      objectFit: 'cover'
+                    }}
+                  />
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '0',
+                    left: '0',
+                    right: '0',
+                    backgroundColor: 'rgba(0,0,0,0.7)',
+                    color: 'white',
+                    padding: '5px',
+                    fontSize: '12px',
+                    textAlign: 'center'
+                  }}>
+                    {format(new Date(detection.timestamp), 'HH:mm:ss')} - {detection.confidence}%
+                  </div>
+                </div>
+              ))}
             </div>
+          ) : (
             <div style={{
+              height: '100px',
               display: 'flex',
-              justifyContent: 'space-between',
-              padding: '8px 0',
-              borderBottom: `1px solid ${darkMode ? '#57606f' : '#dfe4ea'}`,
-              fontSize: '14px'
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: darkMode ? '#a4b0be' : '#57606f'
             }}>
-              <span>12:15:22 - Camera bật</span>
-              <span style={{ color: '#2ed573' }}>Thông tin</span>
+              Chưa có phát hiện nào
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>
@@ -1659,7 +2366,16 @@ const toggleVoiceControl = () => {
       <Navbar
         darkMode={darkMode}
         onLogout={handleLogout}
-        onDarkModeToggle={setDarkMode}
+        onDarkModeToggle={useCallback(() => {
+          const newMode = !darkMode;
+          setDarkMode(newMode);
+          const newEntry = {
+            timestamp: new Date(),
+            event: `Chuyển sang chế độ ${newMode ? 'tối' : 'sáng'}`,
+            type: 'system'
+          };
+          setSystemHistory(prev => [newEntry, ...prev.slice(0, 99)]);
+        }, [darkMode])}
       />
   
       <div style={slideContainerStyle}>
@@ -1671,10 +2387,11 @@ const toggleVoiceControl = () => {
           <CalendarSlide />
           <ControlSlide />
           <CameraSlide />
+          <HistorySlide />
         </div>
         
         <div style={indicatorContainerStyle}>
-          {[0, 1, 2, 3].map((index) => (
+          {[0, 1, 2, 3, 4].map((index) => (
             <div 
               key={index}
               onClick={() => setCurrentSlide(index)}
@@ -1683,6 +2400,50 @@ const toggleVoiceControl = () => {
           ))}
         </div>
       </div>
+
+      {/* Feedback popup */}
+      {commandFeedback && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: commandFeedback.result.includes('Không nhận diện') ? '#ff4757' : '#2ed573',
+          color: 'white',
+          padding: '10px 20px',
+          borderRadius: '20px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          zIndex: 1000,
+          animation: 'fadeInOut 3s ease-in-out',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center'
+        }}>
+          <div style={{ fontWeight: 'bold' }}>{commandFeedback.result}</div>
+          {commandFeedback.command !== 'auto' && (
+            <div style={{ fontSize: '12px', opacity: 0.8 }}>
+              {format(commandFeedback.timestamp, 'HH:mm:ss')}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* CSS animations */}
+      <style>
+        {`
+          @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+          }
+          @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+          }
+        `}
+      </style>
     </div>
   );
 };

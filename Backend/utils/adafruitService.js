@@ -11,7 +11,7 @@ const client = mqtt.connect(brokerUrl, {
 
 client.on("connect", () => {
   console.log("Kết nối thành công với Adafruit IO");
-  client.subscribe(`${process.env.ADAFRUIT_USERNAME}/set-led`);
+  client.subscribe(`${process.env.ADAFRUIT_USERNAME}/feeds/ai-home.bbc-led`);
   client.subscribe(`${process.env.ADAFRUIT_USERNAME}/feeds/ai-home.bbc-motion`);
   client.subscribe(
     `${process.env.ADAFRUIT_USERNAME}/feeds/ai-home.bbc-humidity`
