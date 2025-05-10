@@ -1,12 +1,12 @@
 import mqttClient from "../utils/adafruitService.js";
 
-const updatedFanStatus = async (req, res) => {
+const updatedVoiceStatus = async (req, res) => {
   try {
     const { status } = req.body;
     console.log(status);
     await new Promise((resolve, reject) => {
       mqttClient.client.publish(
-        `${process.env.ADAFRUIT_USERNAME}/feeds/button-fan`,
+        `${process.env.ADAFRUIT_USERNAME}/feeds/log-voice`,
         status,
         (err) => {
           if (err) {
@@ -16,7 +16,7 @@ const updatedFanStatus = async (req, res) => {
         }
       );
     });
-
+    
     console.log(`Đã gửi trạng thái ${status} lên Adafruit IO.`);
     return res.json({
       message: `Trạng thái ${status} đã được gửi thành công!`,
@@ -29,4 +29,4 @@ const updatedFanStatus = async (req, res) => {
   }
 };
 
-export default { updatedFanStatus };
+export default { updatedVoiceStatus };

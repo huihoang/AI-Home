@@ -1,12 +1,12 @@
 import mqttClient from "../utils/adafruitService.js";
 
-const updatedFanStatus = async (req, res) => {
+const updatedHangCloth = async (req, res) => {
   try {
     const { status } = req.body;
     console.log(status);
     await new Promise((resolve, reject) => {
       mqttClient.client.publish(
-        `${process.env.ADAFRUIT_USERNAME}/feeds/button-fan`,
+        `${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe`,
         status,
         (err) => {
           if (err) {
@@ -29,4 +29,4 @@ const updatedFanStatus = async (req, res) => {
   }
 };
 
-export default { updatedFanStatus };
+export default { updatedHangCloth };

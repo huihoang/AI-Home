@@ -39,7 +39,7 @@ const checkTemperature = async (req, res) => {
 const updatedTemperature = async (req, res) => {
   try {
     const { value } = req.body;
-
+    console.log(value);
     // Publish trạng thái lên Adafruit IO
     await new Promise((resolve, reject) => {
       mqttClient.client.publish(
