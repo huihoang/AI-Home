@@ -75,3 +75,21 @@
 .register-link span:hover {
   color: #5a6fd1;
 }
+.forgot-password-link {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #666;
+  text-align: center;
+}
+
+.forgot-password-link span {
+  color: #3498db;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.success-message {
+  color: #2ecc71;
+  margin-bottom: 15px;
+  text-align: center;
+}

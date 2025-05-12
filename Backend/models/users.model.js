@@ -25,10 +25,31 @@ const userSchema = new mongoose.Schema({
         enum: ['user', 'admin'],
         default: 'user'
     },
+    fullName: {
+        type: String
+    },
+    phoneNum: {
+        type: Number,
+        default:null
+    },
+    identification: {
+        type: Number,
+        default: null
+    },
+    address: {
+        type:String,
+        default:""
+    },
+    avatar: {
+        type:String,
+        default: ""
+    },
+    
     createdAt: {
         type: Date,
         default: Date.now
-    }
+    },
+
 }, {
     timestamps: true,
     versionKey: false,

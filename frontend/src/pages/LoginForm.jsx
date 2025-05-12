@@ -61,6 +61,9 @@ const LoginForm = () => {
         <div className="register-link">
           Chưa có tài khoản? <span onClick={() => navigate('/register')}>Đăng ký ngay</span>
         </div>
+        <div className="forgot-password-link">
+  Quên mật khẩu? <span onClick={() => navigate('/forgot-password')}>Đặt lại mật khẩu</span>
+</div>
       </form>
     </div>
   );
