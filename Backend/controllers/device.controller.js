@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Device from "../models/device.model.js"; // Cần thêm .js
 import Sensor from "../models/sensors.model.js";
+import logService from "../utils/log.service.js";
 
 /**
  * Tạo thiết bị mới
@@ -22,7 +23,10 @@ const createDevice = async (req, res) => {
       status: status || "offline",
       user_id: user_id || req.user.user_id 
     });
-
+    await logService.createLog(
+      `Add_device`,
+      `Divide ${name} have added by user ${req.user.user_id} `
+    )
     const savedDevice = await device.save();
     
     res.status(201).json({
@@ -155,6 +159,10 @@ const updateDevice = async (req, res) => {
     if (status) device.status = status;
     
     const updatedDevice = await device.save();
+    await logService.createLog(
+      `Update_device`,
+      `Divide ${name} have updated by user ${req.user.user_id} `
+    )
     
     res.status(200).json({
       message: "Device updated successfully",
@@ -197,7 +205,10 @@ const deleteDevice = async (req, res) => {
     
     // Xóa thiết bị
     await Device.findByIdAndDelete(deviceId);
-    
+    await logService.createLog(
+      `Add_device`,
+      `Divide ${x} have added by user ${req.user.user_id} `
+    )
     res.status(200).json({
       message: "Device and associated sensors deleted successfully"
     });

@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
         enum: ['user', 'admin'],
         default: 'user'
     },
-    fullName: {
+    full_name: {
         type: String
     },
     phoneNum: {
@@ -49,6 +49,15 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+
+    resetPasswordToken: {
+        type: String,
+        default: null
+    },
+    resetPasswordExpires: {
+        type: Date,
+        default: null
+    }
 
 }, {
     timestamps: true,
