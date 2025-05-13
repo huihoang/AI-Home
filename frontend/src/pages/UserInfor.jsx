@@ -145,9 +145,9 @@ const UserInfor = () => {
             ) : (
               <>
                 <h3>{user.fullName || user.username}</h3>
-                <p><strong>Tên đăng nhập:</strong> {user.username}</p>
+                <p><strong>Tên đăng nhập:</strong> {user.userName}</p>
                 <p><strong>Email:</strong> {user.email}</p>
-                <p><strong>Số điện thoại:</strong> {user.phone}</p>
+                <p><strong>Số điện thoại:</strong> {user.phoneNum}</p>
                 <p><strong>Ngày tham gia:</strong> {new Date(user.joinDate).toLocaleDateString()}</p>
               </>
             )}

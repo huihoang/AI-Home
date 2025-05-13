@@ -19,8 +19,8 @@ const LoginForm = () => {
       password
     });
 
-    const token = response.data;
-    const  user  = response.data;
+    const {user, token} = response.data;
+    
     localStorage.setItem('token', token);
     localStorage.setItem('currentUser', JSON.stringify(user)); // Lưu thông tin user
     navigate('/dashboard');
