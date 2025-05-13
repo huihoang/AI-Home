@@ -53,13 +53,11 @@ const registerUser = async (req, res) => {
 
 
 const loginUser = async (req, res) => {
-
   if (!req.body) {
     return res.status(400).json({ message: 'Request body is missing' });
   }
 
   const { email, password } = req.body;
-
 
   if (!email || !password) {
     return res.status(400).json({ message: 'Email and password are required' });
@@ -67,7 +65,7 @@ const loginUser = async (req, res) => {
 
   try {
     const user = await User.findOne({ email });
-    console.log(user)
+
     if (!user) {
       return res.status(400).json({ message: 'Invalid email' });
     }
@@ -83,11 +81,22 @@ const loginUser = async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    res.status(200).json({ token });
+    res.status(200).json({
+      token,
+      user: {
+        _id: user._id,
+        user_name: user.user_name,
+        email: user.email,
+        fullName: user.fullName || user.full_name,  // phòng trường hợp đặt khác tên
+        avatar: user.avatar || '', // fallback nếu avatar chưa có
+        role: user.role
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 const updateUser = async (req, res) => {
   try {
@@ -162,7 +171,8 @@ const forgotPassword = async (req, res) => {
     user.resetPasswordExpires = Date.now() + 3600000;
     await user.save();
 
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+
     const emailSent = await emailService.sendEmailPasswordEmail(email, resetLink);
 
     if (emailSent) {
@@ -217,8 +227,8 @@ const resetPassword = async (req, res) => {
 
     await logService.createLog(
       `User_change_password`,
-      `User ${userId} have changed their password`,
-      {user_id: userId}  
+      `User ${user._id} have changed their password`,
+      {user_id: user._id}  
     )
     res.status(200).json({
       message: 'Password is updated successfully',

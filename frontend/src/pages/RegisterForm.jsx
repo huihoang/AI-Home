@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import '../components/LoginForm.css';
 
 const RegisterForm = () => {
@@ -9,8 +10,7 @@ const RegisterForm = () => {
     confirmPassword: '',
     fullName: '',
     email: '',
-    phone: '',
-    avatar: null
+    phone: ''
   });
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -23,50 +23,36 @@ const RegisterForm = () => {
     }));
   };
 
-  const handleAvatarChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({
-          ...prev,
-          avatar: reader.result
-        }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    
+    setError('');
+
     if (formData.password !== formData.confirmPassword) {
       setError('Mật khẩu nhập lại không khớp');
       return;
     }
 
-    const users = JSON.parse(localStorage.getItem('users')) || [];
-    const userExists = users.some(user => user.username === formData.username);
-    
-    if (userExists) {
-      setError('Tài khoản đã tồn tại');
-      return;
-    }
+    try {
+      await axios.post('http://localhost:8080/users/register', {
+        user_name: formData.username,
+        password: formData.password,
+        email: formData.email,
+        full_name: formData.fullName,
+        phoneNum: formData.phone,
+        identification: '',
+        address: '',
+        role: 'user'
+      });
 
-    const newUser = {
-      username: formData.username,
-      password: formData.password,
-      fullName: formData.fullName,
-      email: formData.email,
-      phone: formData.phone,
-      avatar: formData.avatar,
-      joinDate: new Date().toISOString(),
-      role: 'user'
-    };
-    
-    localStorage.setItem('users', JSON.stringify([...users, newUser]));
-    alert('Đăng ký thành công! Bạn sẽ được chuyển đến trang đăng nhập.');
-    navigate('/login');
+      alert('Đăng ký thành công! Bạn sẽ được chuyển đến trang đăng nhập.');
+      navigate('/login');
+    } catch (err) {
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError('Lỗi kết nối đến server.');
+      }
+    }
   };
 
   return (
@@ -77,9 +63,9 @@ const RegisterForm = () => {
         {error && <div className="error-message">{error}</div>}
 
         <label htmlFor="username">Tên đăng nhập</label>
-        <input 
-          type="text" 
-          placeholder="Nhập tên đăng nhập" 
+        <input
+          type="text"
+          placeholder="Nhập tên đăng nhập"
           id="username"
           name="username"
           value={formData.username}
@@ -88,9 +74,9 @@ const RegisterForm = () => {
         />
 
         <label htmlFor="password">Mật khẩu</label>
-        <input 
-          type="password" 
-          placeholder="Nhập mật khẩu" 
+        <input
+          type="password"
+          placeholder="Nhập mật khẩu"
           id="password"
           name="password"
           value={formData.password}
@@ -99,9 +85,9 @@ const RegisterForm = () => {
         />
 
         <label htmlFor="confirmPassword">Nhập lại mật khẩu</label>
-        <input 
-          type="password" 
-          placeholder="Nhập lại mật khẩu" 
+        <input
+          type="password"
+          placeholder="Nhập lại mật khẩu"
           id="confirmPassword"
           name="confirmPassword"
           value={formData.confirmPassword}
@@ -110,9 +96,9 @@ const RegisterForm = () => {
         />
 
         <label htmlFor="fullName">Họ và tên</label>
-        <input 
-          type="text" 
-          placeholder="Nhập họ và tên" 
+        <input
+          type="text"
+          placeholder="Nhập họ và tên"
           id="fullName"
           name="fullName"
           value={formData.fullName}
@@ -121,9 +107,9 @@ const RegisterForm = () => {
         />
 
         <label htmlFor="email">Email</label>
-        <input 
-          type="email" 
-          placeholder="Nhập email" 
+        <input
+          type="email"
+          placeholder="Nhập email"
           id="email"
           name="email"
           value={formData.email}
@@ -132,9 +118,9 @@ const RegisterForm = () => {
         />
 
         <label htmlFor="phone">Số điện thoại</label>
-        <input 
-          type="tel" 
-          placeholder="Nhập số điện thoại" 
+        <input
+          type="tel"
+          placeholder="Nhập số điện thoại"
           id="phone"
           name="phone"
           value={formData.phone}
@@ -142,16 +128,8 @@ const RegisterForm = () => {
           required
         />
 
-        <label htmlFor="avatar">Ảnh đại diện (tùy chọn)</label>
-        <input 
-          type="file" 
-          id="avatar"
-          accept="image/*"
-          onChange={handleAvatarChange}
-        />
-
         <button type="submit" className="login-button">Đăng Ký</button>
-        
+
         <div className="register-link">
           Đã có tài khoản? <span onClick={() => navigate('/login')}>Đăng nhập ngay</span>
         </div>

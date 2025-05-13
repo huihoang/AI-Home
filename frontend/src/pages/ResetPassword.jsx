@@ -26,11 +26,16 @@ const ResetPassword = () => {
     setError('');
     
     try {
-      const response = await axios.post('http://localhost:8080/users/reset-password/confirm', {
-        token,
-        newPassword: password
-      });
-      
+        console.log("TOKEN gửi từ URL:", token);
+console.log("MẬT KHẨU gửi:", password);
+
+      const response = await axios.post('http://localhost:8080/users/reset-password', {
+  token,
+  new_password: password
+});
+
+
+
       if (response.data.success) {
         setSuccess(true);
       } else {

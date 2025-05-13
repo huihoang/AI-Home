@@ -16,7 +16,7 @@ const ForgotPassword = () => {
     setError('');
     
     try {
-      const response = await axios.post('http://localhost:8080/users/reset-password', {
+      const response = await axios.post('http://localhost:8080/users/forgot-password', {
         email: email
       });
       

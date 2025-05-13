@@ -60,6 +60,7 @@ const Dashboard = () => {
     humidity: [],
     brightness: []
   });
+  const [notifications, setNotifications] = useState([]);
   const [transcript, setTranscript] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [commandFeedback, setCommandFeedback] = useState(null);
@@ -67,7 +68,12 @@ const Dashboard = () => {
   const [displayTime, setDisplayTime] = useState(format(new Date(), 'HH:mm:ss'));
   const [activeSlide, setActiveSlide] = useState(currentSlide);
 
-
+const [thresholds, setThresholds] = useState({
+  temperature: { min: 20, max: 30 },
+  humidity: { min: 40, max: 70 },
+  brightness: { min: 30, max: 80 }
+});
+const [alerts, setAlerts] = useState([]);
   const [chartData, setChartData] = useState({
     labels: [],
     datasets: [
@@ -139,10 +145,181 @@ const Dashboard = () => {
     humidity, brightness, currentSlide, doorStatus, fanLevel, notes,
     selectedDate, systemHistory, detectionHistory, sensorDataHistory
   ]);
+  const fetchThresholds = async () => {
+    
+  try {
+    const token = localStorage.getItem('token');
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    const userId = currentUser?._id;
+    
+    if (!userId) return;
+    
+    const response = await axios.get(`http://localhost:8080/config`, {
+      headers:
+      {
+        Authorization : `Bearer ${token}`
+      }
+    });
+    console.log(response.data);
+    const userConfig = response.data;
+    
+    if (userConfig && userConfig.thresholds) {
+      setThresholds({
+        temperature: { 
+          min: userConfig.thresholds.temperature.low,
+          max: userConfig.thresholds.temperature.high
+        },
+        humidity: { 
+          min: userConfig.thresholds.humidity.low,
+          max: userConfig.thresholds.humidity.high
+        },
+        brightness: { 
+          min: userConfig.thresholds.brightness.low,
+          max: userConfig.thresholds.brightness.high
+        }
+      });
+    }
+  } catch (error) {
+    console.error("Lỗi khi lấy ngưỡng từ API:", error);
+  }
+};
+
+const saveThresholds = async () => {
+  try {
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    const userId = currentUser?._id;
+    
+    if (!userId) return;
+    
+    await axios.get(`http://localhost:8080`, {
+      user_id: userId,
+      thresholds: {
+        temperature: {
+          low: thresholds.temperature.min,
+          high: thresholds.temperature.max
+        },
+        humidity: {
+          low: thresholds.humidity.min,
+          high: thresholds.humidity.max
+        },
+        brightness: {
+          low: thresholds.brightness.min,
+          high: thresholds.brightness.max
+        }
+      }
+    });
+    
+    setCommandFeedback({
+      command: 'settings',
+      result: 'Đã lưu cài đặt ngưỡng',
+      timestamp: new Date()
+    });
+  } catch (error) {
+    console.error("Lỗi khi lưu ngưỡng:", error);
+    setCommandFeedback({
+      command: 'settings',
+      result: 'Lỗi khi lưu cài đặt ngưỡng',
+      timestamp: new Date()
+    });
+  }
+};
+const fetchSensorWarnings = async () => {
+  try {
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    const userId = currentUser?._id;
+
+    if (!userId) return;
+
+    const [tempRes, humidRes, brightRes] = await Promise.all([
+      axios.get(`http://localhost:8080/sensors/temperature/status?user_id=${userId}`),
+      axios.get(`http://localhost:8080/sensors/humidity/status?user_id=${userId}`),
+      axios.get(`http://localhost:8080/sensors/bright/status?user_id=${userId}`)
+    ]);
+
+    const newNotifications = [];
+
+    if (tempRes.data.isOverThreshold) {
+      newNotifications.push({
+        message: tempRes.data.msg,
+        timestamp: new Date(),
+        type: 'temperature',
+        read: false
+      });
+    }
+    if (humidRes.data.isOverThreshold) {
+      newNotifications.push({
+        message: humidRes.data.msg,
+        timestamp: new Date(),
+        type: 'humidity',
+        read: false
+      });
+    }
+    if (brightRes.data.isOverThreshold) {
+      newNotifications.push({
+        message: brightRes.data.msg,
+        timestamp: new Date(),
+        type: 'brightness',
+        read: false
+      });
+    }
+
+    if (newNotifications.length > 0) {
+      setNotifications(prev => [...newNotifications, ...prev]);
+    }
+  } catch (err) {
+    console.error("Lỗi khi lấy cảnh báo từ API:", err);
+  }
+};
+
+
+  useEffect(() => {
+  fetchSensorWarnings();
+  const interval = setInterval(fetchSensorWarnings, 60000);
+  return () => clearInterval(interval);
+}, [fetchSensorWarnings]); // Thêm dependency nếu dùng useCallback
+
   useEffect(() => {
     setActiveSlide(currentSlide);
   }, [currentSlide]);
+  useEffect(() => {
+  const newAlerts = [];
   
+  if (temperature !== null) {
+    if (temperature < thresholds.temperature.min) {
+      newAlerts.push(`Nhiệt độ thấp (${temperature}°C < ${thresholds.temperature.min}°C)`);
+    } else if (temperature > thresholds.temperature.max) {
+      newAlerts.push(`Nhiệt độ cao (${temperature}°C > ${thresholds.temperature.max}°C)`);
+    }
+  }
+  
+  if (humidity !== null) {
+    if (humidity < thresholds.humidity.min) {
+      newAlerts.push(`Độ ẩm thấp (${humidity}% < ${thresholds.humidity.min}%)`);
+    } else if (humidity > thresholds.humidity.max) {
+      newAlerts.push(`Độ ẩm cao (${humidity}% > ${thresholds.humidity.max}%)`);
+    }
+  }
+  
+  if (brightness !== null) {
+    if (brightness < thresholds.brightness.min) {
+      newAlerts.push(`Ánh sáng yếu (${brightness}% < ${thresholds.brightness.min}%)`);
+    } else if (brightness > thresholds.brightness.max) {
+      newAlerts.push(`Ánh sáng mạnh (${brightness}% > ${thresholds.brightness.max}%)`);
+    }
+  }
+  
+  setAlerts(newAlerts);
+  
+  // Thêm vào lịch sử hệ thống nếu có cảnh báo mới
+  if (newAlerts.length > 0) {
+    const newEntries = newAlerts.map(alert => ({
+      timestamp: new Date(),
+      event: `Cảnh báo: ${alert}`,
+      type: 'alert'
+    }));
+    setSystemHistory(prev => [...newEntries, ...prev.slice(0, 99)]);
+  }
+}, [temperature, humidity, brightness, thresholds]);
   useEffect(() => {
     let timer;
     if (activeSlide === 1) {
@@ -655,7 +832,7 @@ const Dashboard = () => {
     setSystemHistory(prev => [newEntry, ...prev.slice(0, 99)]);
   
     try {
-      await axios.post("http://localhost:8080/api/led/update-status", {
+      await axios.post("http://localhost:8080/led/update-status", {
         status: newStatus ? '1' : '0'
       });
     } catch (error) {
@@ -676,7 +853,7 @@ const Dashboard = () => {
     setSystemHistory(prev => [newEntry, ...prev.slice(0, 99)]);
   
     try {
-      await axios.post("http://localhost:8080/api/fan/update-status", {
+      await axios.post("http://localhost:8080/fan/update-status", {
         status: newStatus ? "ON" : "OFF"
       });
     } catch (error) {
@@ -980,19 +1157,19 @@ const Dashboard = () => {
     </div>
   );
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev === 4 ? 0 : prev + 1));
+    setCurrentSlide((prev) => (prev === 5 ? 0 : prev + 1));
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev === 0 ? 4 : prev - 1));
+    setCurrentSlide((prev) => (prev === 0 ? 5 : prev - 1));
   };
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 10000);
+  // useEffect(() => {
+  //   const timer = setInterval(() => {
+  //     setCurrentTime(new Date());
+  //   }, 10000);
 
-    return () => clearInterval(timer);
-  }, []);
+  //   return () => clearInterval(timer);
+  // }, []);
 
   // Component styles
   const cardStyle = {
@@ -1083,106 +1260,71 @@ const Dashboard = () => {
     letterSpacing: 0.5,
     textTransform: "uppercase",
   };
-  const FanControl = () => (
-    <div
-      style={{
-        ...cardStyle,
-        backgroundColor: darkMode ? "#2f3542" : "white",
-        color: darkMode ? "white" : "#2f3542",
-      }}
-    >
-      <div style={sensorTitleStyle}>FAN CONTROL</div>
+  const FanControl = () => {
+  const handleFanToggle = async () => {
+    const newStatus = !fanStatus;
+    try {
+      await axios.post("http://localhost:8080/fan/update-status", {
+        status: newStatus ? "ON" : "OFF"
+      });
+      setFanStatus(newStatus);
+    } catch (error) {
+      console.error('Lỗi khi điều khiển quạt:', error);
+    }
+  };
 
-      {/* Fan Toggle Switch */}
-      <div
-        style={{
-          position: "relative",
-          width: 100,
-          height: 40,
-          backgroundColor: fanStatus ? "#2ed573" : "#ff4757",
-          borderRadius: 20,
-          cursor: "pointer",
-          margin: "20px auto",
-          transition: "all 0.3s ease",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-        }}
-        onClick={toggleFan}
-      >
-        <div
+  return (
+    <div style={{...cardStyle, backgroundColor: darkMode ? "#2f3542" : "white"}}>
+      <div style={sensorTitleStyle}>ĐIỀU KHIỂN QUẠT</div>
+      
+      {/* Nút bật/tắt */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        margin: '20px 0'
+      }}>
+        <button
+          onClick={handleFanToggle}
           style={{
-            position: "absolute",
-            left: fanStatus ? "calc(100% - 35px)" : "5px",
-            top: "50%",
-            transform: "translateY(-50%)",
-            width: 30,
-            height: 30,
-            backgroundColor: "white",
-            borderRadius: "50%",
-            transition: "left 0.3s ease",
-            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            color: "white",
-            fontWeight: "bold",
-            pointerEvents: "none",
-            userSelect: "none",
-            fontSize: 14,
+            padding: '12px 24px',
+            backgroundColor: fanStatus ? '#2ed573' : '#ff4757',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '16px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease'
           }}
         >
-          {fanStatus ? "ON" : "OFF"}
-        </div>
+          {fanStatus ? 'TẮT QUẠT' : 'BẬT QUẠT'}
+        </button>
       </div>
 
-      {/* Fan Speed Levels - Only show when fan is on */}
+      {/* Điều chỉnh tốc độ khi quạt bật */}
       {fanStatus && (
-        <div style={{ padding: "0 20px", marginTop: "15px" }}>
-          <div
-            style={{
-              textAlign: "center",
-              color: darkMode ? "#dfe4ea" : "#57606f",
-              marginBottom: "10px",
-              fontSize: "14px",
-            }}
-          >
-            Chọn mức quạt:
+        <div style={{ padding: '0 20px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '15px' }}>
+            Tốc độ quạt: <strong>Mức {fanLevel}</strong>
           </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
-              gap: "10px",
-              marginBottom: "15px",
-            }}
-          >
-            {[1, 2, 3, 4].map((level) => (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: '10px'
+          }}>
+            {[1, 2, 3, 4].map(level => (
               <button
                 key={level}
                 onClick={() => setFanLevel(level)}
                 style={{
-                  padding: "8px",
-                  backgroundColor:
-                    fanLevel === level
-                      ? "#2ed573"
-                      : darkMode
-                      ? "#57606f"
-                      : "#f1f2f6",
-                  color:
-                    fanLevel === level
-                      ? "white"
-                      : darkMode
-                      ? "white"
-                      : "#2f3542",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontWeight: "bold",
-                  transition: "all 0.3s ease",
+                  padding: '10px',
+                  backgroundColor: fanLevel === level 
+                    ? '#3498db' 
+                    : darkMode ? '#57606f' : '#f1f2f6',
+                  color: fanLevel === level ? 'white' : darkMode ? 'white' : '#2f3542',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer'
                 }}
               >
                 {level}
@@ -1193,6 +1335,7 @@ const Dashboard = () => {
       )}
     </div>
   );
+};
   const slideContainerStyle = {
     position: "relative",
     width: "100%",
@@ -1314,7 +1457,228 @@ const Dashboard = () => {
       </div>
     );
   };
+const ThresholdSettings = () => (
+  <div style={{...cardStyle, backgroundColor: darkMode ? "#2f3542" : "white", padding: '20px'}}>
+    <h3 style={{...sensorTitleStyle, marginBottom: '20px'}}>THIẾT LẬP NGƯỠNG</h3>
+    
+    {/* Nhiệt độ */}
+    <div style={{ marginBottom: '25px' }}>
+      <h4 style={{
+        color: darkMode ? '#64ffda' : '#0077b6',
+        marginBottom: '10px',
+        fontSize: '16px'
+      }}>Nhiệt độ (°C)</h4>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+        <div>
+          <label style={{
+            display: 'block',
+            marginBottom: '5px',
+            color: darkMode ? '#a4b0be' : '#57606f',
+            fontSize: '14px'
+          }}>Tối thiểu</label>
+          <input
+            type="number"
+            value={thresholds.temperature.min}
+            onChange={(e) => setThresholds(prev => ({
+              ...prev,
+              temperature: { ...prev.temperature, min: Math.max(0, Number(e.target.value)) }
+            }))}
+            min="0"
+            max={thresholds.temperature.max - 1}
+            style={{
+              width: '100%',
+              padding: '10px',
+              borderRadius: '6px',
+              border: `1px solid ${darkMode ? '#57606f' : '#dfe4ea'}`,
+              backgroundColor: darkMode ? '#3d4852' : '#f1f2f6',
+              color: darkMode ? 'white' : '#2f3542'
+            }}
+          />
+        </div>
+        <div>
+          <label style={{
+            display: 'block',
+            marginBottom: '5px',
+            color: darkMode ? '#a4b0be' : '#57606f',
+            fontSize: '14px'
+          }}>Tối đa</label>
+          <input
+            type="number"
+            value={thresholds.temperature.max}
+            onChange={(e) => setThresholds(prev => ({
+              ...prev,
+              temperature: { ...prev.temperature, max: Math.min(50, Number(e.target.value)) }
+            }))}
+            min={thresholds.temperature.min + 1}
+            max="50"
+            style={{
+              width: '100%',
+              padding: '10px',
+              borderRadius: '6px',
+              border: `1px solid ${darkMode ? '#57606f' : '#dfe4ea'}`,
+              backgroundColor: darkMode ? '#3d4852' : '#f1f2f6',
+              color: darkMode ? 'white' : '#2f3542'
+            }}
+          />
+        </div>
+      </div>
+    </div>
+    
+    {/* Độ ẩm */}
+    <div style={{ marginBottom: '25px' }}>
+      <h4 style={{
+        color: darkMode ? '#64ffda' : '#0077b6',
+        marginBottom: '10px',
+        fontSize: '16px'
+      }}>Độ ẩm (%)</h4>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+        <div>
+          <label style={{
+            display: 'block',
+            marginBottom: '5px',
+            color: darkMode ? '#a4b0be' : '#57606f',
+            fontSize: '14px'
+          }}>Tối thiểu</label>
+          <input
+            type="number"
+            value={thresholds.humidity.min}
+            onChange={(e) => setThresholds(prev => ({
+              ...prev,
+              humidity: { ...prev.humidity, min: Math.max(0, Number(e.target.value)) }
+            }))}
+            min="0"
+            max={thresholds.humidity.max - 1}
+            style={{
+              width: '100%',
+              padding: '10px',
+              borderRadius: '6px',
+              border: `1px solid ${darkMode ? '#57606f' : '#dfe4ea'}`,
+              backgroundColor: darkMode ? '#3d4852' : '#f1f2f6',
+              color: darkMode ? 'white' : '#2f3542'
+            }}
+          />
+        </div>
+        <div>
+          <label style={{
+            display: 'block',
+            marginBottom: '5px',
+            color: darkMode ? '#a4b0be' : '#57606f',
+            fontSize: '14px'
+          }}>Tối đa</label>
+          <input
+            type="number"
+            value={thresholds.humidity.max}
+            onChange={(e) => setThresholds(prev => ({
+              ...prev,
+              humidity: { ...prev.humidity, max: Math.min(100, Number(e.target.value)) }
+            }))}
+            min={thresholds.humidity.min + 1}
+            max="100"
+            style={{
+              width: '100%',
+              padding: '10px',
+              borderRadius: '6px',
+              border: `1px solid ${darkMode ? '#57606f' : '#dfe4ea'}`,
+              backgroundColor: darkMode ? '#3d4852' : '#f1f2f6',
+              color: darkMode ? 'white' : '#2f3542'
+            }}
+          />
+        </div>
+      </div>
+    </div>
+    
+    {/* Ánh sáng */}
+    <div style={{ marginBottom: '15px' }}>
+      <h4 style={{
+        color: darkMode ? '#64ffda' : '#0077b6',
+        marginBottom: '10px',
+        fontSize: '16px'
+      }}>Ánh sáng (%)</h4>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+        <div>
+          <label style={{
+            display: 'block',
+            marginBottom: '5px',
+            color: darkMode ? '#a4b0be' : '#57606f',
+            fontSize: '14px'
+          }}>Tối thiểu</label>
+          <input
+            type="number"
+            value={thresholds.brightness.min}
+            onChange={(e) => setThresholds(prev => ({
+              ...prev,
+              brightness: { ...prev.brightness, min: Math.max(0, Number(e.target.value)) }
+            }))}
+            min="0"
+            max={thresholds.brightness.max - 1}
+            style={{
+              width: '100%',
+              padding: '10px',
+              borderRadius: '6px',
+              border: `1px solid ${darkMode ? '#57606f' : '#dfe4ea'}`,
+              backgroundColor: darkMode ? '#3d4852' : '#f1f2f6',
+              color: darkMode ? 'white' : '#2f3542'
+            }}
+          />
+        </div>
+        <div>
+          <label style={{
+            display: 'block',
+            marginBottom: '5px',
+            color: darkMode ? '#a4b0be' : '#57606f',
+            fontSize: '14px'
+          }}>Tối đa</label>
+          <input
+            type="number"
+            value={thresholds.brightness.max}
+            onChange={(e) => setThresholds(prev => ({
+              ...prev,
+              brightness: { ...prev.brightness, max: Math.min(100, Number(e.target.value)) }
+            }))}
+            min={thresholds.brightness.min + 1}
+            max="100"
+            style={{
+              width: '100%',
+              padding: '10px',
+              borderRadius: '6px',
+              border: `1px solid ${darkMode ? '#57606f' : '#dfe4ea'}`,
+              backgroundColor: darkMode ? '#3d4852' : '#f1f2f6',
+              color: darkMode ? 'white' : '#2f3542'
+            }}
+          />
+        </div>
+      </div>
+    </div>
 
+    {/* Nút lưu cài đặt */}
+    <button
+  onClick={saveThresholds}
+  style={{
+    width: '100%',
+    padding: '12px',
+    backgroundColor: '#2ed573',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '16px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    marginTop: '10px',
+    transition: 'all 0.3s ease',
+    ':hover': {
+      backgroundColor: '#27ae60'
+    }
+  }}
+>
+  LƯU CÀI ĐẶT
+</button>
+  </div>
+  
+);
+useEffect(() => {
+  fetchThresholds();
+  fetchSensorWarnings();
+}, []);
   const BrightnessIndicator = ({ brightness }) => {
     const minBrightness = 0;
     const maxBrightness = 100;
@@ -1446,6 +1810,23 @@ const Dashboard = () => {
       >
         THÔNG TIN CẢM BIẾN
       </h2>
+{alerts.length > 0 && (
+  <div style={{
+    backgroundColor: "#ff6b6b",
+    color: "white",
+    padding: "10px 15px",
+    borderRadius: "8px",
+    marginBottom: "20px",
+    fontWeight: "bold",
+    maxWidth: "1000px",
+    width: "100%",
+    textAlign: "center"
+  }}>
+    {alerts.map((alert, idx) => (
+      <div key={idx} style={{ marginBottom: "5px" }}>⚠️ {alert}</div>
+    ))}
+  </div>
+)}
 
       <div
         style={{
@@ -1709,6 +2090,15 @@ const Dashboard = () => {
 
   const CalendarSlide = () => {
     // Hàm mở modal nhập ghi chú
+    const [currentTime, setCurrentTime] = useState(new Date());
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000); // Cập nhật mỗi giây
+
+    return () => clearInterval(timer);
+  }, []);
     const handleAddNote = (day) => {
       if (!day) return;
       const dateKey = format(day, "yyyy-MM-dd");
@@ -2817,6 +3207,7 @@ const Dashboard = () => {
       <Navbar
         darkMode={darkMode}
         onLogout={handleLogout}
+        notifications={notifications || []}
         onDarkModeToggle={useCallback(() => {
           const newMode = !darkMode;
           setDarkMode(newMode);
@@ -2843,10 +3234,11 @@ const Dashboard = () => {
           <ControlSlide />
           <CameraSlide />
           <HistorySlide />
+          <ThresholdSettings />
         </div>
 
         <div style={indicatorContainerStyle}>
-          {[0, 1, 2, 3, 4].map((index) => (
+          {[0, 1, 2, 3, 4, 5].map((index) => (
             <div 
               key={index}
               onClick={() => setCurrentSlide(index)}
