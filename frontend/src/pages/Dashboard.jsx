@@ -8,7 +8,7 @@ import { useCallback } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
 Chart.register(...registerables);
-
+import mqtt from 'mqtt';
 const API_URL_TEMP = "https://io.adafruit.com/api/v2/hoangbk4/feeds/sensor-temperature/data";
 const API_URL_HUMIDITY = "https://io.adafruit.com/api/v2/hoangbk4/feeds/sensor-humidity/data";
 const API_URL_BRIGHTNESS = "https://io.adafruit.com/api/v2/hoangbk4/feeds/sensor-light/data";
@@ -902,197 +902,303 @@ const fetchSensorWarnings = async () => {
   };
 
   const handleVoiceCommand = async (command) => {
-    const normalizedCommand = command.toLowerCase().trim();
-    let actionTaken = false;
-    let feedbackMessage = '';
-    let shouldUseBackend = true; // Mặc định sử dụng backend nếu có kết nối
-  
-    try {
-      // Thử gửi lệnh đến backend trước
-      if (shouldUseBackend) {
-        const response = await axios.post('http://localhost:8080/voice/update-status', {
-          status: normalizedCommand
-        }, {
-          timeout: 3000 // Timeout sau 3 giây nếu không có phản hồi
-        });
-  
-        if (response.data.success) {
-          feedbackMessage = response.data.message || 'Lệnh đã được thực hiện';
-          actionTaken = true;
-          
-          // Cập nhật trạng thái thiết bị dựa trên phản hồi từ backend
-          if (response.data.deviceStatus) {
-            switch (response.data.device) {
-              case 'led':
-                setLedStatus(response.data.deviceStatus === 'on');
-                break;
-              case 'fan':
-                setFanStatus(response.data.deviceStatus === 'on');
-                if (response.data.speedLevel) {
-                  setFanLevel(response.data.speedLevel);
-                }
-                break;
-              case 'door':
-                setDoorStatus(response.data.deviceStatus === 'open');
-                break;
-              case 'camera':
-                setLedStatus(response.data.deviceStatus === 'on'); // Giả sử camera dùng chung trạng thái với đèn
-                break;
-            }
-          }
-          return; // Thoát nếu backend xử lý thành công
-        }
-      }
-    } catch (error) {
-      console.error('Lỗi kết nối đến server:', error);
-      shouldUseBackend = false; // Chuyển sang chế độ offline
-      feedbackMessage = 'Đang sử dụng điều khiển cục bộ';
-    }
-  
-    // Xử lý cục bộ nếu không có kết nối đến backend hoặc backend không xử lý được
-    if (!actionTaken) {
-      // Điều khiển đèn
-      if (normalizedCommand.includes('bật đèn') || normalizedCommand.includes('bật đèn led') || normalizedCommand.includes('bật đèn điện')) {
-        if (!ledStatus) {
-          await toggleLED();
-          feedbackMessage = 'Đã bật đèn';
-          actionTaken = true;
-        } else {
-          feedbackMessage = 'Đèn đã được bật từ trước';
-        }
-      } 
-      else if (normalizedCommand.includes('tắt đèn') || normalizedCommand.includes('tắt đèn led') || normalizedCommand.includes('tắt đèn điện')) {
-        if (ledStatus) {
-          await toggleLED();
-          feedbackMessage = 'Đã tắt đèn';
-          actionTaken = true;
-        } else {
-          feedbackMessage = 'Đèn đã được tắt từ trước';
-        }
-      }
-      
-      // Điều khiển quạt
-      else if (normalizedCommand.includes('bật quạt') || normalizedCommand.includes('mở quạt')) {
-        if (!fanStatus) {
-          await toggleFan(true);
-          feedbackMessage = 'Đã bật quạt';
-          actionTaken = true;
-        } else {
-          feedbackMessage = 'Quạt đã được bật từ trước';
-        }
-      } 
-      else if (normalizedCommand.includes('tắt quạt') || normalizedCommand.includes('đóng quạt')) {
-        if (fanStatus) {
-          await toggleFan(false);
-          feedbackMessage = 'Đã tắt quạt';
-          actionTaken = true;
-        } else {
-          feedbackMessage = 'Quạt đã được tắt từ trước';
-        }
-      }
-      
-      // Điều chỉnh tốc độ quạt
-      else if (normalizedCommand.match(/quạt mức (\d)/) || normalizedCommand.match(/chỉnh quạt mức (\d)/)) {
-        const fanLevelMatch = normalizedCommand.match(/(\d)/);
-        const level = parseInt(fanLevelMatch[1]);
-        if (level >= 1 && level <= 4) {
-          setFanLevel(level);
-          if (!fanStatus) await toggleFan(true);
-          feedbackMessage = `Đã đặt quạt mức ${level}`;
-          actionTaken = true;
-        } else {
-          feedbackMessage = 'Mức quạt phải từ 1 đến 4';
-        }
-      }
-      
-      // Điều khiển cửa
-      else if (normalizedCommand.includes('mở cửa') || normalizedCommand.includes('mở cổng')) {
-        if (!doorStatus) {
-          setDoorStatus(true);
-          feedbackMessage = 'Đã mở cửa (tự động đóng sau 5 giây)';
-          actionTaken = true;
-          setTimeout(() => {
-            setDoorStatus(false);
-            setCommandFeedback({
-              command: 'auto',
-              result: 'Cửa đã tự động đóng',
-              timestamp: new Date()
-            });
-          }, 5000);
-        } else {
-          feedbackMessage = 'Cửa đã được mở từ trước';
-        }
-      } 
-      else if (normalizedCommand.includes('đóng cửa') || normalizedCommand.includes('đóng cổng')) {
-        if (doorStatus) {
-          setDoorStatus(false);
-          feedbackMessage = 'Đã đóng cửa';
-          actionTaken = true;
-        } else {
-          feedbackMessage = 'Cửa đã được đóng từ trước';
-        }
-      }
-      
-      // Điều khiển camera
-      else if (normalizedCommand.includes('bật camera') || normalizedCommand.includes('mở camera') || normalizedCommand.includes('bật ghi hình')) {
-        if (!ledStatus) {
-          await toggleLED();
-          feedbackMessage = 'Đã bật camera giám sát';
-          actionTaken = true;
-        } else {
-          feedbackMessage = 'Camera đã được bật từ trước';
-        }
-      } 
-      else if (normalizedCommand.includes('tắt camera') || normalizedCommand.includes('đóng camera') || normalizedCommand.includes('tắt ghi hình')) {
-        if (ledStatus) {
-          await toggleLED();
-          feedbackMessage = 'Đã tắt camera giám sát';
-          actionTaken = true;
-        } else {
-          feedbackMessage = 'Camera đã được tắt từ trước';
-        }
-      }
-      
-      // Lệnh tổng hợp
-      else if (normalizedCommand.includes('bật tất cả') || normalizedCommand.includes('mở tất cả')) {
-        if (!ledStatus) await toggleLED();
-        if (!fanStatus) await toggleFan(true);
-        feedbackMessage = 'Đã bật tất cả thiết bị';
-        actionTaken = true;
-      } 
-      else if (normalizedCommand.includes('tắt tất cả') || normalizedCommand.includes('đóng tất cả')) {
-        if (ledStatus) await toggleLED();
-        if (fanStatus) await toggleFan(false);
-        if (doorStatus) setDoorStatus(false);
-        feedbackMessage = 'Đã tắt tất cả thiết bị';
-        actionTaken = true;
-      }
-      
-      // Lệnh không nhận diện được
-      else {
-        feedbackMessage = 'Không nhận diện được lệnh. Vui lòng thử lại.';
-      }
-    }
-  
-    // Ghi log và hiển thị phản hồi
-    if (actionTaken || feedbackMessage) {
-      const newEntry = {
-        timestamp: new Date(),
-        event: `Lệnh thoại: "${normalizedCommand}" - ${feedbackMessage}`,
-        type: 'voice'
-      };
-      setSystemHistory(prev => [newEntry, ...prev.slice(0, 99)]);
-      
-      setCommandFeedback({
-        command: normalizedCommand,
-        result: feedbackMessage,
-        timestamp: new Date()
+  const normalizedCommand = command.toLowerCase().trim();
+  let actionTaken = false;
+  let feedbackMessage = '';
+  let shouldUseBackend = true;
+  let device = '';
+  let deviceStatus = '';
+
+  try {
+    // Thử gửi lệnh đến backend trước
+    if (shouldUseBackend) {
+      const response = await axios.post('http://localhost:8080/voice/update-status', {
+        status: normalizedCommand
+      }, {
+        timeout: 3000 // Timeout sau 3 giây nếu không có phản hồi
       });
+
+      if (response.data.success) {
+        feedbackMessage = response.data.message || 'Lệnh đã được thực hiện';
+        actionTaken = true;
+        device = response.data.device;
+        deviceStatus = response.data.deviceStatus;
+        
+        // Cập nhật trạng thái thiết bị dựa trên phản hồi từ backend
+        switch (device) {
+          case 'led':
+            setLedStatus(deviceStatus === '1' || deviceStatus === 'ON');
+            break;
+          case 'fan':
+            setFanStatus(deviceStatus === 'ON');
+            if (response.data.speedLevel) {
+              setFanLevel(response.data.speedLevel);
+            }
+            break;
+          case 'door':
+            setDoorStatus(deviceStatus === 'OPEN');
+            // Tự động đóng cửa sau 5 giây nếu là lệnh mở
+            if (deviceStatus === 'OPEN') {
+              setTimeout(() => {
+                setDoorStatus(false);
+                setCommandFeedback({
+                  command: 'auto',
+                  result: 'Cửa đã tự động đóng',
+                  timestamp: new Date()
+                });
+              }, 5000);
+            }
+            break;
+        }
+        return; // Thoát nếu backend xử lý thành công
+      }
     }
-  
-    // Tự động ẩn feedback sau 3 giây
-    setTimeout(() => setCommandFeedback(null), 3000);
-  };
+  } catch (error) {
+    console.error('Lỗi kết nối đến server:', error);
+    shouldUseBackend = false; // Chuyển sang chế độ offline
+    feedbackMessage = 'Đang sử dụng điều khiển cục bộ';
+  }
+
+  // Xử lý cục bộ nếu không có kết nối đến backend hoặc backend không xử lý được
+  if (!actionTaken) {
+    // Điều khiển đèn
+    if (normalizedCommand.includes('bật đèn') || 
+        normalizedCommand.includes('bật đèn led') || 
+        normalizedCommand.includes('bật đèn điện')) {
+      if (!ledStatus) {
+        await toggleLED();
+        feedbackMessage = 'Đã bật đèn';
+        actionTaken = true;
+        device = 'led';
+        deviceStatus = 'ON';
+      } else {
+        feedbackMessage = 'Đèn đã được bật từ trước';
+      }
+    } 
+    else if (normalizedCommand.includes('tắt đèn') || 
+             normalizedCommand.includes('tắt đèn led') || 
+             normalizedCommand.includes('tắt đèn điện')) {
+      if (ledStatus) {
+        await toggleLED();
+        feedbackMessage = 'Đã tắt đèn';
+        actionTaken = true;
+        device = 'led';
+        deviceStatus = 'OFF';
+      } else {
+        feedbackMessage = 'Đèn đã được tắt từ trước';
+      }
+    }
+    
+    // Điều khiển quạt
+    else if (normalizedCommand.includes('bật quạt') || 
+             normalizedCommand.includes('mở quạt')) {
+      if (!fanStatus) {
+        await toggleFan(true);
+        feedbackMessage = 'Đã bật quạt';
+        actionTaken = true;
+        device = 'fan';
+        deviceStatus = 'ON';
+      } else {
+        feedbackMessage = 'Quạt đã được bật từ trước';
+      }
+    } 
+    else if (normalizedCommand.includes('tắt quạt') || 
+             normalizedCommand.includes('đóng quạt')) {
+      if (fanStatus) {
+        await toggleFan(false);
+        feedbackMessage = 'Đã tắt quạt';
+        actionTaken = true;
+        device = 'fan';
+        deviceStatus = 'OFF';
+      } else {
+        feedbackMessage = 'Quạt đã được tắt từ trước';
+      }
+    }
+    
+    // Điều chỉnh tốc độ quạt
+    else if (normalizedCommand.match(/quạt mức (\d)/) || 
+             normalizedCommand.match(/chỉnh quạt mức (\d)/)) {
+      const fanLevelMatch = normalizedCommand.match(/(\d)/);
+      const level = parseInt(fanLevelMatch[1]);
+      if (level >= 1 && level <= 4) {
+        setFanLevel(level);
+        if (!fanStatus) await toggleFan(true);
+        feedbackMessage = `Đã đặt quạt mức ${level}`;
+        actionTaken = true;
+        device = 'fan';
+        deviceStatus = 'ON';
+      } else {
+        feedbackMessage = 'Mức quạt phải từ 1 đến 4';
+      }
+    }
+    
+    // Điều khiển cửa
+    else if (normalizedCommand.includes('mở cửa') || 
+             normalizedCommand.includes('mở cổng')) {
+      if (!doorStatus) {
+        setDoorStatus(true);
+        feedbackMessage = 'Đã mở cửa (tự động đóng sau 5 giây)';
+        actionTaken = true;
+        device = 'door';
+        deviceStatus = 'OPEN';
+        setTimeout(() => {
+          setDoorStatus(false);
+          setCommandFeedback({
+            command: 'auto',
+            result: 'Cửa đã tự động đóng',
+            timestamp: new Date()
+          });
+        }, 5000);
+      } else {
+        feedbackMessage = 'Cửa đã được mở từ trước';
+      }
+    } 
+    else if (normalizedCommand.includes('đóng cửa') || 
+             normalizedCommand.includes('đóng cổng')) {
+      if (doorStatus) {
+        setDoorStatus(false);
+        feedbackMessage = 'Đã đóng cửa';
+        actionTaken = true;
+        device = 'door';
+        deviceStatus = 'CLOSE';
+      } else {
+        feedbackMessage = 'Cửa đã được đóng từ trước';
+      }
+    }
+    
+    // Điều khiển camera
+    else if (normalizedCommand.includes('bật camera') || 
+             normalizedCommand.includes('mở camera') || 
+             normalizedCommand.includes('bật ghi hình')) {
+      if (!ledStatus) {
+        await toggleLED();
+        feedbackMessage = 'Đã bật camera giám sát';
+        actionTaken = true;
+        device = 'camera';
+        deviceStatus = 'ON';
+      } else {
+        feedbackMessage = 'Camera đã được bật từ trước';
+      }
+    } 
+    else if (normalizedCommand.includes('tắt camera') || 
+             normalizedCommand.includes('đóng camera') || 
+             normalizedCommand.includes('tắt ghi hình')) {
+      if (ledStatus) {
+        await toggleLED();
+        feedbackMessage = 'Đã tắt camera giám sát';
+        actionTaken = true;
+        device = 'camera';
+        deviceStatus = 'OFF';
+      } else {
+        feedbackMessage = 'Camera đã được tắt từ trước';
+      }
+    }
+    
+    // Lệnh tổng hợp
+    else if (normalizedCommand.includes('bật tất cả') || 
+             normalizedCommand.includes('mở tất cả')) {
+      if (!ledStatus) await toggleLED();
+      if (!fanStatus) await toggleFan(true);
+      feedbackMessage = 'Đã bật tất cả thiết bị';
+      actionTaken = true;
+      device = 'all';
+      deviceStatus = 'ON';
+    } 
+    else if (normalizedCommand.includes('tắt tất cả') || 
+             normalizedCommand.includes('đóng tất cả')) {
+      if (ledStatus) await toggleLED();
+      if (fanStatus) await toggleFan(false);
+      if (doorStatus) setDoorStatus(false);
+      feedbackMessage = 'Đã tắt tất cả thiết bị';
+      actionTaken = true;
+      device = 'all';
+      deviceStatus = 'OFF';
+    }
+    
+    // Lệnh không nhận diện được
+    else {
+      feedbackMessage = 'Không nhận diện được lệnh. Vui lòng thử lại.';
+    }
+  }
+
+  // Ghi log và hiển thị phản hồi
+  if (actionTaken || feedbackMessage) {
+    const newEntry = {
+      timestamp: new Date(),
+      event: `Lệnh thoại: "${normalizedCommand}" - ${feedbackMessage}`,
+      type: 'voice',
+      device,
+      deviceStatus
+    };
+    setSystemHistory(prev => [newEntry, ...prev.slice(0, 99)]);
+    
+    setCommandFeedback({
+      command: normalizedCommand,
+      result: feedbackMessage,
+      timestamp: new Date()
+    });
+  }
+
+  // Tự động ẩn feedback sau 3 giây
+  setTimeout(() => setCommandFeedback(null), 3000);
+};
+// useEffect(() => {
+//   // Kết nối MQTT để nhận cập nhật trạng thái thiết bị
+//   const client = mqtt.connect(process.env.REACT_APP_MQTT_BROKER, {
+//     username: process.env.REACT_APP_ADAFRUIT_USERNAME,
+//     password: process.env.REACT_APP_ADAFRUIT_KEY
+//   });
+
+//   client.on('connect', () => {
+//     console.log('Connected to MQTT broker');
+    
+//     // Subscribe các feed điều khiển thiết bị
+//     client.subscribe(`${process.env.REACT_APP_ADAFRUIT_USERNAME}/feeds/led-control`);
+//     client.subscribe(`${process.env.REACT_APP_ADAFRUIT_USERNAME}/feeds/fan-control`);
+//     client.subscribe(`${process.env.REACT_APP_ADAFRUIT_USERNAME}/feeds/door-control`);
+//   });
+
+//   client.on('message', (topic, message) => {
+//     const feed = topic.split('/').pop();
+//     const value = message.toString();
+    
+//     // Cập nhật trạng thái dựa trên feed và giá trị nhận được
+//     switch(feed) {
+//       case 'led-control':
+//         setLedStatus(value === '1');
+//         break;
+//       case 'fan-control':
+//         setFanStatus(value === 'ON');
+//         break;
+//       case 'door-control':
+//         setDoorStatus(value === 'OPEN');
+//         break;
+//     }
+    
+//     // Ghi log hệ thống
+//     const deviceName = {
+//       'led-control': 'Đèn',
+//       'fan-control': 'Quạt',
+//       'door-control': 'Cửa'
+//     }[feed];
+    
+//     const statusText = {
+//       'led-control': value === '1' ? 'bật' : 'tắt',
+//       'fan-control': value === 'ON' ? 'bật' : 'tắt',
+//       'door-control': value === 'OPEN' ? 'mở' : 'đóng'
+//     }[feed];
+    
+//     setSystemHistory(prev => [{
+//       timestamp: new Date(),
+//       event: `${deviceName} đã ${statusText} từ xa`,
+//       type: 'remote'
+//     }, ...prev.slice(0, 99)]);
+//   });
+
+//   return () => {
+//     client.end();
+//   };
+// }, []);
   useEffect(() => {
     const speedMap = { 1: 25, 2: 50, 3: 75, 4: 100 };
     setFanSpeed(speedMap[fanLevel]);

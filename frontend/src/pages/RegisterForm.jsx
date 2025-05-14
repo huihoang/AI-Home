@@ -5,12 +5,12 @@ import '../components/LoginForm.css';
 
 const RegisterForm = () => {
   const [formData, setFormData] = useState({
-    username: '',
+    user_name: '',
     password: '',
     confirmPassword: '',
-    fullName: '',
+    full_Name: '',
     email: '',
-    phone: ''
+    phoneNum: ''
   });
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -34,11 +34,11 @@ const RegisterForm = () => {
 
     try {
       await axios.post('http://localhost:8080/users/register', {
-        user_name: formData.username,
+        user_name: formData.user_name,
         password: formData.password,
         email: formData.email,
-        full_name: formData.fullName,
-        phoneNum: formData.phone,
+        full_name: formData.full_Name,
+        phoneNum: formData.phoneNum,
         identification: '',
         address: '',
         role: 'user'
@@ -67,8 +67,8 @@ const RegisterForm = () => {
           type="text"
           placeholder="Nhập tên đăng nhập"
           id="username"
-          name="username"
-          value={formData.username}
+          name="user_name"
+          value={formData.user_name}
           onChange={handleChange}
           required
         />
@@ -100,8 +100,8 @@ const RegisterForm = () => {
           type="text"
           placeholder="Nhập họ và tên"
           id="fullName"
-          name="fullName"
-          value={formData.fullName}
+          name="full_Name"
+          value={formData.full_Name}
           onChange={handleChange}
           required
         />
@@ -122,7 +122,7 @@ const RegisterForm = () => {
           type="tel"
           placeholder="Nhập số điện thoại"
           id="phone"
-          name="phone"
+          name="phoneNum"
           value={formData.phone}
           onChange={handleChange}
           required

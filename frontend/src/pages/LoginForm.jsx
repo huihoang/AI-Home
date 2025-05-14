@@ -19,10 +19,9 @@ const LoginForm = () => {
       password
     });
 
-    const token = response.data;
-    const  user  = response.data;
+      const { token, user } = response.data;
     localStorage.setItem('token', token);
-    localStorage.setItem('currentUser', JSON.stringify(user)); // Lưu thông tin user
+    localStorage.setItem('currentUser', JSON.stringify(user));
     navigate('/dashboard');
   } catch (err) {
       if (err.response?.data?.message) {
