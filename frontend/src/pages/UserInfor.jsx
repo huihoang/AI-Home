@@ -144,7 +144,7 @@ const UserInfor = () => {
               </>
             ) : (
               <>
-                <h3>{user.full_Name || user.user_name}</h3>
+                <h3>{user.fullName || user.username}</h3>
                 <p><strong>Tên đăng nhập:</strong> {user.user_name}</p>
                 <p><strong>Email:</strong> {user.email}</p>
                 <p><strong>Số điện thoại:</strong> {user.phoneNum}</p>

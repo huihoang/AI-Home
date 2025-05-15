@@ -19,7 +19,9 @@ const LoginForm = () => {
       password
     });
 
+
       const { token, user } = response.data;
+
     localStorage.setItem('token', token);
     localStorage.setItem('currentUser', JSON.stringify(user));
     navigate('/dashboard');
