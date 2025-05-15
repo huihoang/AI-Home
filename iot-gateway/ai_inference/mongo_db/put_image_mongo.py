@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 import urllib.parse
-import base64
+from bson import ObjectId 
 
 # Load biến môi trường từ file .env
 load_dotenv()
@@ -11,7 +11,7 @@ load_dotenv()
 # Lấy thông tin từ .env
 username = os.getenv("MONGO_USER")
 password = os.getenv("MONGO_PASS")
-host = os.getenv("MONGO_HOST")  # Chính là cluster address từ Atlas
+host = os.getenv("MONGO_HOST")
 database = os.getenv("MONGO_DB")
 
 # MÃ HÓA username & password
@@ -36,10 +36,11 @@ except Exception as e:
 db = client["Aihome"]
 collection = db["images"]
 
-def upload_image(image, createdAt, class_name):
+def upload_image(image, createdAt, class_name, user_id):
     """Upload ảnh lên MongoDB"""
     try:
         image_id = collection.insert_one({
+            "user_id": ObjectId(user_id),
             "image": image,
             "createdAt": createdAt,
             "classification": class_name
@@ -48,10 +49,3 @@ def upload_image(image, createdAt, class_name):
         return image_id
     except Exception as e:
         print("❌ Error upload image:", e)
-
-#download
-# Giải mã Base64 và lưu lại thành file ảnh
-# data = collection.find_one({"createdAt": "2025-04-18T09:40:47.994+00:00"})
-# with open("decoded_image.jpg", "wb") as img_file:
-#     img_file.write(base64.b64decode(data["image"]))
-# print("✅ Ảnh đã được giải mã và lưu lại!")

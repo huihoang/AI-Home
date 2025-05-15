@@ -15,8 +15,3 @@ def predict(text):
     action = action_model.predict([text])[0]
     device = device_model.predict([text])[0]
     return {"action": action, "device": device}
-
-# Test
-# print(predict("bật đèn"))
-# print(predict("mở máy lạnh"))
-# print(predict("turn off the light"))

@@ -1,14 +1,25 @@
-import time
 import sys
 from Adafruit_IO import MQTTClient
-import serial.tools.list_ports
 from ai_inference.simple_ai import image_detector
 from ai_inference.voice_control import predict
+import os
+from dotenv import load_dotenv
+import serial.tools.list_ports
 
-# Khai báo thông tin kết nối với Adafruit IO
+#================================================================================================
+# Nhận tham số là 1 user_Id
+if len(sys.argv) < 2:
+    print("❌ Thiếu tham số!")
+    sys.exit(1)
+user_Id = sys.argv[1]
+print(f"🔄 Khởi động IotGateway của user có id là: {user_Id}")
+
+#================================================================================================
+# Thông tin kết nối với Adafruit IO
+load_dotenv()
 AIO_FEED_IDS = ["SENSOR_CAMERA", "SENSOR_MOTION", "LOG_VOICE", "BUTTON_DOOR", "BUTTON_LED", "BUTTON_FAN"]
-AIO_USERNAME = "hoangbk4"
-AIO_KEY = "aio_NktQ198Ae5QxTKhm89KSrOm6pxnl"
+ADAFRUIT_USERNAME = os.getenv('ADAFRUIT_USERNAME')
+AIO_KEY = os.getenv('AIO_KEY')
 
 #================================================================================================
 # Các hàm callback
@@ -18,7 +29,7 @@ def connected(client):
         client.subscribe(topic)
  
 def subscribe(client , userdata , mid , granted_qos):
-    print(f"✅ Subscribe feed thanh cong...")
+    print("✅ Subscribe feed thanh cong...")
 
 def disconnected(client):
     print("❌ Ngat ket noi server...")
@@ -32,7 +43,7 @@ def message(client , feed_id , payload):
     if feed_id == "SENSOR_MOTION":
         if payload == "True":
             print("⚠️ Motion detected!")
-            class_name = image_detector()
+            class_name = image_detector(user_Id)
             client.publish("sensor-camera", class_name)
 
     #! handle voice control
@@ -43,7 +54,7 @@ def message(client , feed_id , payload):
 
 #================================================================================================
 # Kết nối với Adafruit IO
-client = MQTTClient(AIO_USERNAME , AIO_KEY)
+client = MQTTClient(ADAFRUIT_USERNAME , AIO_KEY)
 client.on_connect = connected
 client.on_disconnect = disconnected
 client.on_message = message
@@ -51,17 +62,20 @@ client.on_subscribe = subscribe
 client.connect()
 client.loop_background()
 
-def getPort():
-    ports = serial.tools.list_ports.comports()
-    N = len(ports)
-    commPort = "None"
-    for i in range(0, N):
-        port = ports[i]
-        strPort = str(port)
-        if "USB-SERIAL CH340" in strPort:
-            splitPort = strPort.split(" ")
-            commPort = (splitPort[0])
-    return commPort
+#================================================================================================
+# Kết nối với mạch bằng cổng COM
+
+# def getPort():
+#     ports = serial.tools.list_ports.comports()
+#     N = len(ports)
+#     commPort = "None"
+#     for i in range(0, N):
+#         port = ports[i]
+#         strPort = str(port)
+#         if "USB-SERIAL CH340" in strPort:
+#             splitPort = strPort.split(" ")
+#             commPort = (splitPort[0])
+#     return commPort
 
 # ser = serial.Serial(port=getPort(), baudrate=115200)
 
@@ -102,7 +116,7 @@ while True:
     # class_name = image_detector()
     # client.publish("bbc-camera", class_name)
 
-    #! nhận dữ liệu từ cảm biến 
+    #! nhận dữ liệu từ mạch Yolo:bit
     # readSerial()
     # time.sleep(5)
     pass

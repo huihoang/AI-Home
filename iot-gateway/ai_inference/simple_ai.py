@@ -1,5 +1,5 @@
 from keras.models import load_model
-import cv2  # Install opencv-python
+import cv2  # opencv-python
 import numpy as np
 import base64
 from datetime import datetime
@@ -18,7 +18,7 @@ class_names = ["Have person", "Not have person"]
 # CAMERA can be 0 or 1 based on default camera of your computer
 camera = cv2.VideoCapture(0)
 
-def image_detector():
+def image_detector(user_id: str):
     # Grab the webcamera's image.
     ret, image = camera.read()
 
@@ -34,7 +34,7 @@ def image_detector():
     cv2.imshow("Webcam Image", image)
 
     # Listen to the keyboard for presses. giá trị 0 thì đợi mãi, còn giá trị khác thì đợi N ms
-    keyboard_input = cv2.waitKey(1) & 0xFF # get 8 bits of the key pressed
+    # keyboard_input = cv2.waitKey(1) & 0xFF # get 8 bits of the key pressed
 
     # 27 is the ASCII for the "esc" key on your keyboard.
     # if keyboard_input == 27:
@@ -66,8 +66,8 @@ def image_detector():
 
     # Print prediction and confidence score
     print("\n🧠 Classification AI: ", class_name, end=" - ")
-    print("✨ Confidence Score:", str(confidence_score * 100), "%")
+    print("Confidence Score: ", str(confidence_score * 100), "%")
 
     # upload image to MongoDB
-    upload_image(encoded_string, createdAt, class_name)
+    upload_image(encoded_string, createdAt, class_name, user_id)
     return f"{class_name} - {int(confidence_score * 100)}%"
