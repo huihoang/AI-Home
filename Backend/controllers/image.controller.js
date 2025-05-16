@@ -128,7 +128,7 @@ const addImage = async (req, res) => {
     try {
         const { image, timestamp, classification } = req.body;
 
-        if (!image || !timestamp || !classification) {
+        if (!image  || !classification) {
             return res.status(400).json({
                 success: false,
                 message: 'Thiếu thông tin hình ảnh, thời gian hoặc phân loại'
@@ -138,7 +138,8 @@ const addImage = async (req, res) => {
         const newImage = new Image({
             image,
             timestamp,
-            classification
+            classification,
+            user_id:  req.user.user_id
         });
 
         await newImage.save();

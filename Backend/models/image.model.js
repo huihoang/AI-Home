@@ -6,8 +6,7 @@ const imageSchema = new mongoose.Schema({
     required: true
   },
   timestamp: {
-    type: String,
-    required: true
+    type: String
   },
   classification: {
     type: String,
