@@ -16,6 +16,3 @@ venv/
 
 # Bỏ qua các file môi trường
 **/.env
-
-Backend/
-frontend/
