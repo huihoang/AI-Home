@@ -12,7 +12,7 @@
 # vì tải nhiều version python nên project này đang cần env
 # các bước chạy
 env\Scripts\activate
-python main.py
+python main.py <user_id>
 
 #thoát venv 
 deactivate
