@@ -4,7 +4,8 @@ import Log from '../models/log.model.js';
 
 const updatedVoiceStatus = async (req, res) => {
   try {
-    const { status, user_id } = req.body;
+    const { status } = req.body;
+    const user_id = req.user.user_id;
 
     // Update infor lên server
     await new Promise((resolve, reject) => {
