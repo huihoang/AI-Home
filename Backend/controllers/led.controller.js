@@ -7,7 +7,7 @@ const updatedLedStatus = async (req, res) => {
     // Publish trạng thái lên Adafruit IO
     await new Promise((resolve, reject) => {
       mqttClient.client.publish(
-        `${process.env.ADAFRUIT_USERNAME}/feeds/bbc-led`,
+        `${process.env.ADAFRUIT_USERNAME}/feeds/button_led`,
         status,
         (err) => {
           if (err) {
