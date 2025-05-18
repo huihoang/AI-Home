@@ -39,8 +39,8 @@ const updatedVoiceStatus = async (req, res) => {
           mqttClient.client.removeListener("message", messageHandler);
           success = true;
 
-          const latestTopic = topic.toString();
-          const latestMessage = message.toString();
+          const latestTopic = topic.toString().split("/").at(-1);
+          const latestMessage = message.toString().split("/").at(-1);
 
           const device = topic.split("-")[1];
           const device_id = await Device.findOne({
@@ -50,7 +50,7 @@ const updatedVoiceStatus = async (req, res) => {
 
           await Log.create({
             event: "Voice control",
-            message: `Nội dung nói: "${status}" - Được hiểu là "${latestTopic} - ${latestMessage}"`,
+            message: `Nội dung nói: "${status}" -> Được hiểu là: "${latestTopic} ${latestMessage}"`,
             user_id: user_id,
             device_id: device_id,
           });
@@ -63,7 +63,7 @@ const updatedVoiceStatus = async (req, res) => {
     });
 
     return res.json({
-      message: `Lệnh được hiểu từ giọng nói là: ${latestTopic} - ${latestMessage}`,
+      message: `Lệnh được hiểu từ giọng nói là: ${latestTopic} ${latestMessage}`,
       success: success,
     });
 
