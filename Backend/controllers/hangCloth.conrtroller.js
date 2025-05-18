@@ -6,7 +6,7 @@ const updatedHangCloth = async (req, res) => {
     console.log(status);
     await new Promise((resolve, reject) => {
       mqttClient.client.publish(
-        `${process.env.ADAFRUIT_USERNAME}/feeds/button_hang_clothe`,
+        `${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe`,
         status,
         (err) => {
           if (err) {
