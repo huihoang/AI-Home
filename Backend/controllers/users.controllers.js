@@ -83,8 +83,7 @@ const loginUser = async (req, res) => {
     );
 
     // Gọi Python script
-    const userId = user._id.toString();
-    const pythonProcess = spawn('python', ['main.py', userId], {
+    const pythonProcess = spawn('python', ['main.py', user._id], {
       cwd: '../iot-gateway', // chạy ở thư mục chính xác
       env: {
         ...process.env,

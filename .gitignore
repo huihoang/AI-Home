@@ -17,4 +17,6 @@ venv/
 # Bỏ qua các file môi trường
 **/.env
 
+#bỏ qua tất cả các folder node_modules cả bên trong và ngoài
+**/node_modules/
 .vscode/
