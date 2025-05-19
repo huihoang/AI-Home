@@ -9,10 +9,10 @@ import serial.tools.list_ports
 #================================================================================================
 # Nhận tham số là 1 user_Id
 if len(sys.argv) < 2:
-    print("❌ Thiếu tham số!")
+    print("❌ Thiếu tham số!", flush=True)
     sys.exit(1)
 user_Id = sys.argv[1]
-print(f"🔄 Khởi động IotGateway của user có id là: {user_Id}")
+print(f"🔄 Khoi động IotGateway cua user có id là: {user_Id}", flush=True)
 
 #================================================================================================
 # Thông tin kết nối với Adafruit IO
@@ -24,31 +24,31 @@ AIO_KEY = os.getenv('AIO_KEY')
 #================================================================================================
 # Các hàm callback
 def connected(client):
-    print("✅ Ket noi server thanh cong...")
+    print("✅ Ket noi server thanh cong...", flush=True)
     for topic in AIO_FEED_IDS:
         client.subscribe(topic)
  
 def subscribe(client , userdata , mid , granted_qos):
-    print("✅ Subscribe feed thanh cong...")
+    print("✅ Subscribe feed thanh cong...", flush=True)
 
 def disconnected(client):
-    print("❌ Ngat ket noi server...")
+    print("❌ Ngat ket noi server...", flush=True)
     sys.exit (1)
  
 def message(client , feed_id , payload):
-    print("\n🗯️ Nhan du lieu tu feed " + feed_id + ": " + payload)
+    print("\n🗯️ Nhan du lieu tu feed " + feed_id + ": " + payload, flush=True)
     # ser.write((str(payload) + "#").encode())
 
     #! detect person enter home
     if feed_id == "SENSOR_MOTION":
         if payload == "True":
-            print("⚠️ Motion detected!")
+            print("⚠️ Motion detected!", flush=True)
             class_name = image_detector(user_Id)
             client.publish("sensor-camera", class_name)
 
     #! handle voice control
     if feed_id == "LOG_VOICE":
-        print("🗣️ Voice command detected!")
+        print("🗣️ Voice command detected!", flush=True)
         command = predict(payload)
         client.publish(command['device'], command['action'])
 

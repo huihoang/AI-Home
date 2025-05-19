@@ -9,10 +9,10 @@
 # pip install python-dotenv
 # pip install pymongo
 
-# vì tải nhiều version python nên project này đang cần env
+# vì tải nhiều version python nên project này đang cần env chạy py ver 3.8 cùng các lib
 # các bước chạy
 env\Scripts\activate
 python main.py <user_id>
 
-#thoát venv 
+#thoát venv
 deactivate

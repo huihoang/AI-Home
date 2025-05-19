@@ -4,6 +4,8 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 import urllib.parse
 from bson import ObjectId 
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
 
 # Load biến môi trường từ file .env
 load_dotenv()
@@ -27,9 +29,9 @@ client = MongoClient(mongo_uri, server_api=ServerApi('1'))
 # Kiểm tra kết nối bằng lệnh ping
 try:
     client.admin.command('ping')
-    print("✅ Ket noi thanh cong MongoDB Atlas!")
+    print("✅ Ket noi thanh cong MongoDB Atlas!", flush=True)
 except Exception as e:
-    print("❌ Loi ket noi MongoDB:", e)
+    print("❌ Loi ket noi MongoDB:", e, flush=True)
     exit(1)
 
 # Chọn database 
@@ -45,7 +47,7 @@ def upload_image(image, createdAt, class_name, user_id):
             "createdAt": createdAt,
             "classification": class_name
         }).inserted_id
-        print(f"\n🚀 Uploaded image to Mongo with ID: {image_id}")
+        print(f"\n🚀 Uploaded image to Mongo with ID: {image_id}", flush=True)
         return image_id
     except Exception as e:
-        print("❌ Error upload image:", e)
+        print("❌ Error upload image:", e, flush=True)

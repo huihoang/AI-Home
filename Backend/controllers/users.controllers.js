@@ -6,6 +6,7 @@ import emailService from '../utils/emailService.js';
 import logService from '../utils/log.service.js'
 import { error } from 'console';
 import { truncateSync } from 'fs';
+import { spawn } from 'child_process';
 
 const registerUser = async (req, res) => {
   const { user_name, password, role, email, full_name, phoneNum, identification, address } = req.body;
@@ -80,6 +81,28 @@ const loginUser = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
+
+    // Gọi Python script
+    const userId = user._id.toString();
+    const pythonProcess = spawn('python', ['main.py', userId], {
+      cwd: '../iot-gateway', // chạy ở thư mục chính xác
+      env: {
+        ...process.env,
+        PYTHONIOENCODING: 'utf-8', // để in được emoji và ký tự unicode
+      }
+    });
+
+    pythonProcess.stdout.on('data', (data) => {
+      console.log(`[PYTHON STDOUT] ${data.toString()}`);
+    });
+
+    // pythonProcess.stderr.on('data', (data) => {
+    //   console.error(`[PYTHON STDERR] ${data.toString()}`);
+    // });
+
+    pythonProcess.on('close', (code) => {
+      console.log(`[PYTHON] Process exited with code ${code}`);
+    });
 
     res.status(200).json({
       token,

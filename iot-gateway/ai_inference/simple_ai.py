@@ -24,7 +24,7 @@ def image_detector(user_id: str):
 
     # Kiểm tra nếu chụp thành công
     if not ret or image is None:
-        print("❌ Không thể chụp ảnh! Kiểm tra camera.")
+        print("❌ Không thể chụp ảnh! Kiểm tra camera.", flush=True)
         return None  # Dừng hàm nếu lỗi
 
     # Resize the raw image into (height, width) pixels
@@ -65,8 +65,8 @@ def image_detector(user_id: str):
     confidence_score = prediction[0][index]
 
     # Print prediction and confidence score
-    print("\n🧠 Classification AI: ", class_name, end=" - ")
-    print("Confidence Score: ", str(confidence_score * 100), "%")
+    print("\n🧠 Classification AI: ", class_name, end=" - ", flush=True)
+    print("Confidence Score: ", str(confidence_score * 100), "%", flush=True)
 
     # upload image to MongoDB
     upload_image(encoded_string, createdAt, class_name, user_id)
