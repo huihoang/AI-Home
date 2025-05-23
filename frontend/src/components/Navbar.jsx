@@ -1,14 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { FaSearch, FaBell, FaMoon, FaSun, FaUserCircle, FaSignOutAlt } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-
-const Navbar = ({ onDarkModeToggle, darkMode }) => {
+import { format } from 'date-fns';
+const Navbar = ({ onDarkModeToggle, darkMode, notifications = [] }) => {
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [userMenuVisible, setUserMenuVisible] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
-
+ const clearNotifications = () => {
+    setNotifications([]);
+  };
+  const markAsRead = (index) => {
+    const updatedNotifications = [...notifications];
+    updatedNotifications[index].read = true;
+    setNotifications(updatedNotifications);
+  };
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('currentUser'));
     if (user) {
@@ -98,43 +105,132 @@ const Navbar = ({ onDarkModeToggle, darkMode }) => {
 
         {/* Notifications */}
         <div style={{ position: 'relative' }}>
-          <button
-            onClick={() => setNotificationsVisible(!notificationsVisible)}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '8px',
-              borderRadius: '50%',
-              ':hover': {
-                backgroundColor: darkMode ? '#57606f' : '#f1f2f6'
-              }
-            }}
-          >
-            <FaBell size={20} />
-          </button>
-          
-          {notificationsVisible && (
-            <div style={{
+        <button onClick={() => setNotificationsVisible(!notificationsVisible)}>
+          <FaBell size={20} />
+          {notifications.filter(n => !n.read).length > 0 && (
+            <span style={{
               position: 'absolute',
-              right: 0,
-              top: '40px',
-              width: '300px',
-              backgroundColor: darkMode ? '#2f3542' : 'white',
-              borderRadius: '12px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-              padding: '16px'
+              top: '-5px',
+              right: '-5px',
+              backgroundColor: '#ff4757',
+              color: 'white',
+              borderRadius: '50%',
+              width: '18px',
+              height: '18px',
+              fontSize: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}>
-              <div style={{ 
-                fontSize: '14px', 
-                color: darkMode ? '#dfe4ea' : '#57606f',
-                textAlign: 'center'
-              }}>
-                No new notifications
-              </div>
-            </div>
+              {notifications.filter(n => !n.read).length}
+            </span>
           )}
-        </div>
+        </button>
+
+        {notificationsVisible && (
+          <div style={{
+            position: 'absolute',
+            right: 0,
+            top: '40px',
+            width: '350px',
+            maxHeight: '500px',
+            overflowY: 'auto',
+            backgroundColor: darkMode ? '#2f3542' : 'white',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+            zIndex: 1000
+          }}>
+            <div style={{
+              padding: '12px',
+              borderBottom: `1px solid ${darkMode ? '#57606f' : '#f1f2f6'}`,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <strong>Thông báo cảnh báo</strong>
+              <button 
+                onClick={clearNotifications}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: darkMode ? '#a4b0be' : '#57606f',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                Xóa tất cả
+              </button>
+            </div>
+
+            {notifications.length === 0 ? (
+              <div style={{ padding: '20px', textAlign: 'center' }}>
+                Không có thông báo mới
+              </div>
+            ) : (
+              notifications.map((notification, index) => (
+                <div 
+                  key={index}
+                  onClick={() => markAsRead(index)}
+                  style={{
+                    padding: '12px',
+                    borderBottom: `1px solid ${darkMode ? '#57606f' : '#f1f2f6'}`,
+                    backgroundColor: notification.read 
+                      ? 'transparent' 
+                      : darkMode 
+                        ? 'rgba(255, 107, 107, 0.1)' 
+                        : 'rgba(255, 107, 107, 0.1)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    {notification.type === 'temperature' && (
+                      <span style={{ 
+                        marginRight: '10px',
+                        color: notification.severity === 'high' ? '#ff4757' : '#ffa502'
+                      }}>🌡️</span>
+                    )}
+                    {notification.type === 'humidity' && (
+                      <span style={{ 
+                        marginRight: '10px',
+                        color: notification.severity === 'high' ? '#ff4757' : '#2ed573'
+                      }}>💧</span>
+                    )}
+                    {notification.type === 'brightness' && (
+                      <span style={{ 
+                        marginRight: '10px',
+                        color: notification.severity === 'high' ? '#ff4757' : '#ffd700'
+                      }}>💡</span>
+                    )}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ 
+                        fontWeight: notification.read ? 'normal' : 'bold',
+                        color: darkMode ? 'white' : '#2f3542'
+                      }}>
+                        {notification.message}
+                      </div>
+                      <div style={{ 
+                        fontSize: '12px',
+                        color: darkMode ? '#a4b0be' : '#57606f',
+                        marginTop: '4px'
+                      }}>
+                        {format(new Date(notification.timestamp), 'HH:mm dd/MM/yyyy')}
+                      </div>
+                    </div>
+                    {!notification.read && (
+                      <div style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        backgroundColor: '#ff4757'
+                      }} />
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
 
         {/* User Avatar with dropdown menu */}
         {currentUser && (
