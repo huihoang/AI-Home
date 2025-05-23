@@ -66,6 +66,8 @@ const updateUserConfig = async (req,res) => {
 
 
 
+
+
 const addSchedule = async (req, res) => {
     try {
         const {device, status, time, days, enable} = req.body;

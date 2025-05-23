@@ -7,6 +7,7 @@ import ledRoutes from "./led.routes.js";
 import fanRoutes from "./fan.routes.js";
 import hangClothRoutes from "./hangClothe.routes.js";
 import userConfig from "./userConfig.routes.js"
+import imageRoutes from "./image.routes.js"
 import voiceRoutes from './voice.routes.js';
 // import mqttClient from "../utils/adafruitService.js";
 const router = express.Router();
@@ -19,5 +20,6 @@ router.use("/led", ledRoutes);
 router.use("/fan", fanRoutes);
 router.use("/hangclothe", hangClothRoutes);
 router.use("/config", userConfig)
-router.use('/voice', voiceRoutes);
+router.use("/voice", voiceRoutes);
+router.use("/images",imageRoutes)
 export default router;
