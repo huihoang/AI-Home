@@ -64,9 +64,12 @@ const updatedVoiceStatus = async (req, res) => {
     });
 
     return res.json({
-      message: `Lệnh được hiểu từ giọng nói là: ${latestTopic} ${latestMessage}`,
-      success: success,
-    });
+  message: `Lệnh được hiểu từ giọng nói là: ${latestTopic} ${latestMessage}`,
+  success: success,
+  device: latestTopic.split("-")[1], // led/fan/door
+  deviceStatus: latestMessage.toUpperCase() // ON/OFF/OPEN
+});
+
 
   } catch (error) {
     console.error("Lỗi khi xử lý voice:", error);

@@ -46,7 +46,21 @@ const registerUser = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
-    res.status(201).json({ token });
+    res.status(201).json({
+  message: 'User registered successfully',
+  token,
+  user: {
+    _id: newUser._id,
+    user_name: newUser.user_name,
+    email: newUser.email,
+    full_name: newUser.full_name,
+    phoneNum: newUser.phoneNum,
+    avatar: newUser.avatar || '',
+    role: newUser.role,
+    joinDate: newUser.createdAt   // 👈 Thêm dòng này
+  }
+});
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -104,16 +118,19 @@ const loginUser = async (req, res) => {
     });
 
     res.status(200).json({
-      token,
-      user: {
-        _id: user._id,
-        user_name: user.user_name,
-        email: user.email,
-        fullName: user.fullName || user.full_name,  // phòng trường hợp đặt khác tên
-        avatar: user.avatar || '', // fallback nếu avatar chưa có
-        role: user.role
-      }
-    });
+  token,
+  user: {
+    _id: user._id,
+    user_name: user.user_name,
+    email: user.email,
+    full_name: user.full_name, // 👈 dùng đúng field như trong schema
+    phoneNum: user.phoneNum,
+    avatar: user.avatar || '',
+    role: user.role,
+    joinDate: user.createdAt   // 👈 Thêm dòng này
+  }
+});
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

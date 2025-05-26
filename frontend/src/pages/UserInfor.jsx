@@ -34,7 +34,7 @@ const UserInfor = () => {
     // Update in users array
     const users = JSON.parse(localStorage.getItem('users')) || [];
     const updatedUsers = users.map(u => 
-      u.username === updatedUser.username ? updatedUser : u
+      u.user_name === updatedUser.user_name ? updatedUser : u
     );
     localStorage.setItem('users', JSON.stringify(updatedUsers));
     
@@ -108,8 +108,8 @@ const UserInfor = () => {
                   <label>Tên đăng nhập</label>
                   <input
                     type="text"
-                    name="username"
-                    value={formData.username || ''}
+                    name="user_name"
+                    value={formData.user_name || ''}
                     onChange={handleInputChange}
                     disabled
                   />
@@ -118,8 +118,8 @@ const UserInfor = () => {
                   <label>Họ và tên</label>
                   <input
                     type="text"
-                    name="fullName"
-                    value={formData.fullName || ''}
+                    name="full_Name"
+                    value={formData.full_Name || ''}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -136,8 +136,8 @@ const UserInfor = () => {
                   <label>Số điện thoại</label>
                   <input
                     type="tel"
-                    name="phone"
-                    value={formData.phone || ''}
+                    name="phoneNum"
+                    value={formData.phoneNum || ''}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -145,7 +145,7 @@ const UserInfor = () => {
             ) : (
               <>
                 <h3>{user.fullName || user.username}</h3>
-                <p><strong>Tên đăng nhập:</strong> {user.userName}</p>
+                <p><strong>Tên đăng nhập:</strong> {user.user_name}</p>
                 <p><strong>Email:</strong> {user.email}</p>
                 <p><strong>Số điện thoại:</strong> {user.phoneNum}</p>
                 <p><strong>Ngày tham gia:</strong> {new Date(user.joinDate).toLocaleDateString()}</p>

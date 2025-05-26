@@ -14,4 +14,4 @@ router.post('/automation/rules', auth, configController.addAutomationRule);
 router.delete('/automation/rules/:ruleId', auth, configController.removeAutomationRule);
 
 
-export default router
+export default router   

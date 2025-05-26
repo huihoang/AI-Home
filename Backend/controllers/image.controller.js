@@ -7,6 +7,7 @@ import User from "../models/users.model.js";
 const getAllImages = async (req, res) => {
     try {
         const userId = req.user.user_id;
+         console.log("userId:", userId);
         const user = await User.findById(userId)
         if(user.role != "admin") {
             return res.status(403).json({
@@ -18,6 +19,7 @@ const getAllImages = async (req, res) => {
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
         const images = await Image.find().sort({ timestamp: -1 }).skip(skip).limit(parseInt(limit));
+        console.log("images:", images.length);
 
         const total = await Image.countDocuments();
 
@@ -36,6 +38,7 @@ const getAllImages = async (req, res) => {
         })
     } catch (error) {
         console.error("Error fetching images: ", error);
+        console.error("getAllUserImage error:", error.message, error.stack);
         res.status(500).json({
             message: "Error fetching images",
             error: error.message,
@@ -239,6 +242,84 @@ const deleteImage = async (req, res) => {
         });
     }
 };
+const getLatestCameraImage = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        
+        // Lấy ảnh mới nhất từ camera của user
+        const latestImage = await Image.findOne({ user_id: userId })
+            .sort({ timestamp: -1 })
+            .limit(1);
+
+        if (!latestImage) {
+            return res.status(404).json({
+                success: false,
+                message: "Không tìm thấy ảnh camera"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: latestImage
+        });
+    } catch (error) {
+        console.error("Error getting camera image: ", error);
+        res.status(500).json({
+            success: false,
+            message: "Lỗi khi lấy ảnh camera",
+            error: error.message
+        });
+    }
+};
+const getDetectionHistory = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const { limit = 10 } = req.query;
+
+        const detections = await Image.find({ 
+            user_id: userId,
+            classification: "Have person" // Hoặc điều kiện phát hiện người
+        })
+        .sort({ timestamp: -1 })
+        .limit(parseInt(limit));
+
+        res.status(200).json({
+            success: true,
+            data: detections
+        });
+    } catch (error) {
+        console.error("Error fetching detection history: ", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching detection history",
+            error: error.message
+        });
+    }
+};
+const captureImage = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        
+        const mockImage = {
+            image: "base64encodedimage", 
+            timestamp: new Date(),
+            user_id: userId,
+            classification: "No person" 
+        };
+
+        res.status(200).json({
+            success: true,
+            message: "Image captured successfully",
+            data: mockImage
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error capturing image",
+            error: error.message
+        });
+    }
+};
 
 export default {
     getAllImages,
@@ -247,5 +328,8 @@ export default {
     getClassifications,
     addImage,
     deleteImage,
-    getAllUserImage
+    getAllUserImage,
+    getLatestCameraImage,
+    getDetectionHistory,
+    captureImage
 }

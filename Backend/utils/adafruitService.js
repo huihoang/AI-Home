@@ -23,5 +23,4 @@ client.on("connect", () => {
   client.subscribe(`${process.env.ADAFRUIT_USERNAME}/feeds/sensor-temperature`);
 });
 
-
 export default { client };

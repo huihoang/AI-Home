@@ -7,6 +7,10 @@ const upload = multer();
 
 const router = express.Router();
 
+router.get('/latest', auth, imageController.getLatestCameraImage);
+router.post('/capture', auth, imageController.captureImage);
+router.get('/detections', auth, imageController.getDetectionHistory);
+
 // Lấy tất cả hình ảnh (có phân trang)
 router.get('/', auth, imageController.getAllUserImage);
 router.get('/admin', auth, imageController.getAllImages);
