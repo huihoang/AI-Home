@@ -168,20 +168,26 @@ const Navbar = ({ onDarkModeToggle, darkMode, notifications = [] }) => {
               </div>
             ) : (
               notifications.map((notification, index) => (
-                <div 
-                  key={index}
-                  onClick={() => markAsRead(index)}
-                  style={{
-                    padding: '12px',
-                    borderBottom: `1px solid ${darkMode ? '#57606f' : '#f1f2f6'}`,
-                    backgroundColor: notification.read 
-                      ? 'transparent' 
-                      : darkMode 
-                        ? 'rgba(255, 107, 107, 0.1)' 
-                        : 'rgba(255, 107, 107, 0.1)',
-                    cursor: 'pointer'
-                  }}
-                >
+  <div 
+    key={index}
+    onClick={() => markAsRead(index)}
+    style={{
+      padding: '12px',
+      borderBottom: `1px solid ${darkMode ? '#57606f' : '#f1f2f6'}`,
+      backgroundColor: notification.read 
+        ? 'transparent' 
+        : darkMode 
+          ? notification.type === 'temperature' ? 'rgba(255, 107, 107, 0.2)' :
+            notification.type === 'humidity' ? 'rgba(46, 213, 115, 0.2)' :
+            notification.type === 'brightness' ? 'rgba(255, 165, 2, 0.2)' :
+            'rgba(74, 144, 226, 0.2)'
+          : notification.type === 'temperature' ? 'rgba(255, 107, 107, 0.1)' :
+            notification.type === 'humidity' ? 'rgba(46, 213, 115, 0.1)' :
+            notification.type === 'brightness' ? 'rgba(255, 165, 2, 0.1)' :
+            'rgba(74, 144, 226, 0.1)',
+      cursor: 'pointer'
+    }}
+  >
                   <div style={{ display: 'flex', alignItems: 'center' }}>
                     {notification.type === 'temperature' && (
                       <span style={{ 
