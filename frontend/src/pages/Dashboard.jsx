@@ -39,7 +39,7 @@ const Dashboard = () => {
   const [ledStatus, setLedStatus] = useState(initialState?.ledStatus || false);
   const [currentDate, setCurrentDate] = useState(initialState?.currentDate ? new Date(initialState.currentDate) : new Date(today.getFullYear(), today.getMonth()));
   const [calendarDays, setCalendarDays] = useState([]);
-  const [fanStatus, setFanStatus] = useState(initialState?.fanStatus || false);
+  const [fanStatus, setFanStatus] = useState(initialState?.fanStatus || 0);
   const [fanSpeed, setFanSpeed] = useState(initialState?.fanSpeed || 0);
   const [darkMode, setDarkMode] = useState(initialState?.darkMode || false);
   const [temperature, setTemperature] = useState(initialState?.temperature || null);
@@ -50,7 +50,7 @@ const Dashboard = () => {
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef(null);
   const [doorStatus, setDoorStatus] = useState(initialState?.doorStatus || false);
-  const [fanLevel, setFanLevel] = useState(initialState?.fanLevel || 1);
+  const [fanLevel, setFanLevel] = useState(initialState?.fanLevel || 0);
   const [notes, setNotes] = useState(initialState?.notes || {});
   const [selectedDate, setSelectedDate] = useState(initialState?.selectedDate ? new Date(initialState.selectedDate) : null);
   const [systemHistory, setSystemHistory] = useState(initialState?.systemHistory || []);
@@ -231,10 +231,10 @@ useEffect(() => {
 
     // Thêm thông báo sau khi lưu thành công
     const successNotification = {
-      message: `Đã lưu thiết lập ngưỡng mới: 
-                Nhiệt độ (${thresholds.temperature.min}°C - ${thresholds.temperature.max}°C), 
-                Độ ẩm (${thresholds.humidity.min}% - ${thresholds.humidity.max}%), 
-                Ánh sáng (${thresholds.brightness.min}% - ${thresholds.brightness.max}%)`,
+      message: `Đã lưu ngưỡng mới: 
+                Nhiệt độ ${thresholds.temperature.min}°C → ${thresholds.temperature.max}°C
+                Độ ẩm ${thresholds.humidity.min}% → ${thresholds.humidity.max}%
+                Ánh sáng ${thresholds.brightness.min}% → ${thresholds.brightness.max}%`,
       timestamp: new Date(),
       type: 'settings',
       read: false
@@ -883,8 +883,12 @@ const [cameraImages, setCameraImages] = useState([]);
 
     try {
       await axios.post("http://localhost:8080/led/update-status", {
-        status: newStatus ? '1' : '0'
-      });
+  status: newStatus ? 'ON' : 'OFF'
+}, {
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem('token')}`
+  }
+});
     } catch (error) {
       console.error('Lỗi khi gửi yêu cầu điều khiển LED:', error);
     }
@@ -918,25 +922,34 @@ const toggleCamera = useCallback(async () => {
 }, [cameraStatus]);
 
 
-  const toggleFan = useCallback(async (forceStatus = null) => {
-    const newStatus = forceStatus !== null ? forceStatus : !fanStatus;
-    setFanStatus(newStatus);
+  const toggleFan = useCallback(async (level) => {
+  try {
+    // Gửi mức tốc độ dạng số 0-4
+    await axios.post("http://localhost:8080/fan/update-status", {
+  speed: level.toString()
+}, {
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem('token')}`
+  }
+    });
+
+   
+    setFanStatus(level);
+    setFanSpeed(level * 25); 
 
     const newEntry = {
       timestamp: new Date(),
-      event: `Quạt ${newStatus ? 'bật' : 'tắt'}`,
+      event: level === 0 ? "Quạt tắt" : `Quạt chuyển mức ${level}`,
       type: 'device'
     };
     setSystemHistory(prev => [newEntry, ...prev.slice(0, 99)]);
 
-    try {
-      await axios.post("http://localhost:8080/fan/update-status", {
-        status: newStatus ? "ON" : "OFF"
-      });
-    } catch (error) {
-      console.error('Lỗi khi gửi yêu cầu điều khiển quạt:', error);
-    }
-  }, [fanStatus]);
+  } catch (error) {
+    console.error('Lỗi điều khiển quạt:', error);
+  }
+}, []);
+
+
 
 
   const handleLogout = () => {
@@ -1347,10 +1360,16 @@ const toggleListening = useCallback(() => {
 
     recognitionRef.current.start();
   }, [isListening, handleVoiceCommand]);
-  useEffect(() => {
-    const speedMap = { 1: 25, 2: 50, 3: 75, 4: 100 };
-    setFanSpeed(speedMap[fanLevel]);
-  }, [fanLevel]);
+useEffect(() => {
+  const speedMap = { 
+    0: 0, 
+    1: 25, 
+    2: 50, 
+    3: 75, 
+    4: 100 
+  };
+  setFanSpeed(speedMap[fanStatus]);
+}, [fanStatus]);
 
   // Component DeviceStatus
   const DeviceStatus = ({ name, status, icon, darkMode }) => (
@@ -1515,81 +1534,72 @@ const toggleListening = useCallback(() => {
     textTransform: "uppercase",
   };
   const FanControl = () => {
-    const handleFanToggle = async () => {
-      const newStatus = !fanStatus;
-      try {
-        await axios.post("http://localhost:8080/fan/update-status", {
-          status: newStatus ? "ON" : "OFF"
-        });
-        setFanStatus(newStatus);
-      } catch (error) {
-        console.error('Lỗi khi điều khiển quạt:', error);
-      }
-    };
+  const speedOptions = [
+  { level: 0, label: "Tắt", color: "#ccc" },
+  { level: 1, label: "Mức 1", color: "#00a8ff" },
+  { level: 2, label: "Mức 2", color: "#0097e6" },
+  { level: 3, label: "Mức 3", color: "#40739e" },
+];
 
-    return (
-      <div style={{ ...cardStyle, backgroundColor: darkMode ? "#2f3542" : "white" }}>
-        <div style={sensorTitleStyle}>ĐIỀU KHIỂN QUẠT</div>
 
-        {/* Nút bật/tắt */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          margin: '20px 0'
-        }}>
+  const handleFanLevelChange = async (level) => {
+    try {
+      await axios.post("http://localhost:8080/fan/update-status", {
+        speed: level.toString()
+      });
+
+      setFanStatus(level);          // Cập nhật trạng thái hiện tại
+      setFanLevel(level);           // Ghi mức quạt cụ thể
+      setFanSpeed(level * 25);      // Ví dụ: Mức 1 → 25%, Mức 2 → 50%...
+
+      // Ghi log hệ thống
+      const newEntry = {
+        timestamp: new Date(),
+        event: level === 0 ? "Quạt tắt" : `Quạt chuyển mức ${level}`,
+        type: 'device'
+      };
+      setSystemHistory(prev => [newEntry, ...prev.slice(0, 99)]);
+    } catch (error) {
+      console.error("Lỗi điều khiển quạt:", error);
+    }
+  };
+
+  return (
+    <div style={{ ...cardStyle, backgroundColor: darkMode ? "#2f3542" : "white" }}>
+      <div style={sensorTitleStyle}>ĐIỀU KHIỂN QUẠT</div>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
+        gap: '10px',
+        padding: '15px'
+      }}>
+        {speedOptions.map((option) => (
           <button
-            onClick={handleFanToggle}
+            key={option.level}
+            onClick={() => handleFanLevelChange(option.level)}
             style={{
-              padding: '12px 24px',
-              backgroundColor: fanStatus ? '#2ed573' : '#ff4757',
-              color: 'white',
+              padding: '12px',
+              backgroundColor: fanStatus === option.level ? option.color : darkMode ? '#57606f' : '#f1f2f6',
+              color: fanStatus === option.level ? 'white' : darkMode ? 'white' : '#2f3542',
               border: 'none',
               borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.3s ease'
             }}
           >
-            {fanStatus ? 'TẮT QUẠT' : 'BẬT QUẠT'}
+            {option.label}
           </button>
-        </div>
-
-        {/* Điều chỉnh tốc độ khi quạt bật */}
-        {fanStatus && (
-          <div style={{ padding: '0 20px' }}>
-            <div style={{ textAlign: 'center', marginBottom: '15px' }}>
-              Tốc độ quạt: <strong>Mức {fanLevel}</strong>
-            </div>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: '10px'
-            }}>
-              {[1, 2, 3, 4].map(level => (
-                <button
-                  key={level}
-                  onClick={() => setFanLevel(level)}
-                  style={{
-                    padding: '10px',
-                    backgroundColor: fanLevel === level
-                      ? '#3498db'
-                      : darkMode ? '#57606f' : '#f1f2f6',
-                    color: fanLevel === level ? 'white' : darkMode ? 'white' : '#2f3542',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {level}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+          
+        ))}
+        
       </div>
-    );
-  };
+      
+    </div>
+    
+  );
+};
+
   const slideContainerStyle = {
     position: "relative",
     width: "100%",
@@ -2731,78 +2741,108 @@ const toggleListening = useCallback(() => {
         </div>
 
         {/* Fan Control */}
-        <div
-          style={{
-            ...cardStyle,
-            backgroundColor: darkMode ? "#2f3542" : "white",
-            padding: "25px",
-            borderRadius: "12px",
-            boxShadow: "0 8px 20px rgba(0,0,0,0.1)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: "20px",
-            }}
-          >
-            <span
-              style={{
-                fontSize: "24px",
-                marginRight: "10px",
-              }}
-            >
-              🌀
-            </span>
-            <h3
-              style={{
-                ...sensorTitleStyle,
-                margin: "0",
-                fontSize: "20px",
-              }}
-            >
-              ĐIỀU KHIỂN QUẠT
-            </h3>
-          </div>
+<div
+  style={{
+    ...cardStyle,
+    backgroundColor: darkMode ? "#2f3542" : "white",
+    padding: "25px",
+    borderRadius: "12px",
+    boxShadow: "0 8px 20px rgba(0,0,0,0.1)",
+  }}
+>
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: "20px",
+    }}
+  >
+    <span style={{ fontSize: "24px", marginRight: "10px" }}>🌀</span>
+    <h3 style={{ ...sensorTitleStyle, margin: "0", fontSize: "20px" }}>
+      ĐIỀU KHIỂN QUẠT
+    </h3>
+  </div>
 
-          <div style={{ 
-    display: 'grid',
-    gridTemplateColumns: 'repeat(5, 1fr)',
-    gap: '10px',
-    marginTop: '15px'
-  }}>
-    {[0, 1, 2, 3, 4].map(level => (
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(5, 1fr)",
+      gap: "10px",
+      marginTop: "15px",
+    }}
+  >
+    {[0, 1, 2, 3, 4].map((level) => (
       <button
         key={level}
-        onClick={() => {
-          if (level === 0) {
-            toggleFan(false);
-          } else {
-            setFanLevel(level);
-            toggleFan(true);
-          }
-        }}
+        onClick={async () => {
+  try {
+    console.log("Gửi level:", level);
+
+    const token = localStorage.getItem("token");
+    const response = await axios.post(
+      "http://localhost:8080/fan/update-status",
+      { speed: level.toString() },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    console.log("Fan response:", response.data);
+
+    if (response.status === 200 && response.data.message?.includes("thành công")) {
+      setFanStatus(level !== 0);
+      setFanLevel(level);
+      setFanSpeed(level * 25);
+
+      setSystemHistory((prev) => [
+        {
+          timestamp: new Date(),
+          event: level === 0 ? "Quạt tắt" : `Quạt chuyển mức ${level}`,
+          type: "device",
+        },
+        ...prev.slice(0, 99),
+      ]);
+    } else {
+      console.warn("Phản hồi server không thành công:", response.data);
+    }
+  } catch (error) {
+    console.error(
+      "Lỗi điều khiển quạt:",
+      error.response?.data || error.message
+    );
+  }
+}}
+
         style={{
-          padding: '10px',
-          backgroundColor: (fanStatus && fanLevel === level) || 
-                         (!fanStatus && level === 0) ? '#2ed573' : 
-                         darkMode ? '#57606f' : '#f1f2f6',
-          color: (fanStatus && fanLevel === level) || 
-                (!fanStatus && level === 0) ? 'white' : 
-                darkMode ? 'white' : '#2f3542',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          fontWeight: 'bold'
+          padding: "10px",
+          backgroundColor:
+            (fanStatus && fanLevel === level) ||
+            (!fanStatus && level === 0)
+              ? "#2ed573"
+              : darkMode
+              ? "#57606f"
+              : "#f1f2f6",
+          color:
+            (fanStatus && fanLevel === level) ||
+            (!fanStatus && level === 0)
+              ? "white"
+              : darkMode
+              ? "white"
+              : "#2f3542",
+          border: "none",
+          borderRadius: "8px",
+          cursor: "pointer",
+          fontWeight: "bold",
         }}
       >
-        {level === 0 ? 'TẮT' : level}
+        {level === 0 ? "TẮT" : `${level}`}
       </button>
     ))}
   </div>
-  </div>
+</div>
 
         {/* Door Control */}
         <div
@@ -3296,64 +3336,78 @@ const CameraSlide = () => {
     }
   };
 
-    const fetchDetectionHistory = useCallback(async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:8080/images/admin', {
-                headers: { Authorization: `Bearer ${token}` },
-                params: { limit: 10 }
-            });
-            
-            if (response.data.success) {
-                setDetectionHistory(response.data.data || []);
-            }
-        } catch (error) {
-            console.error("Lỗi khi lấy lịch sử phát hiện:", error);
-            setDetectionHistory([]);
-        }
-    }, []);
+  const fetchDetectionHistory = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:8080/images/admin', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success) {
+        // Sắp xếp theo thời gian mới nhất và không giới hạn số lượng
+        const sortedData = response.data.data.sort((a, b) => 
+          new Date(b.timestamp) - new Date(a.timestamp)
+        );
+        setDetectionHistory(sortedData);
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy lịch sử phát hiện:", error);
+      setDetectionHistory([]);
+    }
+  }, []);
 
-    const captureImage = async () => {
-        try {
-            setIsCapturing(true);
-            const token = localStorage.getItem('token');
-            await axios.post('http://localhost:8080/images/capture', {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            await Promise.all([fetchImages(), fetchDetectionHistory()]);
-        } catch (error) {
-            console.error("Lỗi khi chụp ảnh:", error);
-        } finally {
-            setIsCapturing(false);
-        }
-    };
+  const captureImage = async () => {
+    try {
+      setIsCapturing(true);
+      const token = localStorage.getItem('token');
+      await axios.post('http://localhost:8080/images/capture', {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      await Promise.all([fetchImages(), fetchDetectionHistory()]);
+    } catch (error) {
+      console.error("Lỗi khi chụp ảnh:", error);
+    } finally {
+      setIsCapturing(false);
+    }
+  };
 
-    useEffect(() => {
-        if (cameraStatus) {
-            fetchImages();
-            fetchDetectionHistory();
-            
-            const imageInterval = setInterval(fetchImages, 5000);
-            const detectionInterval = setInterval(fetchDetectionHistory, 30000);
-            
-            return () => {
-                clearInterval(imageInterval);
-                clearInterval(detectionInterval);
-            };
-        }
-    }, [cameraStatus, fetchDetectionHistory]);
+  useEffect(() => {
+    if (cameraStatus) {
+      fetchImages();
+      fetchDetectionHistory();
+      
+      const imageInterval = setInterval(fetchImages, 5000);
+      const detectionInterval = setInterval(fetchDetectionHistory, 30000);
+      
+      return () => {
+        clearInterval(imageInterval);
+        clearInterval(detectionInterval);
+      };
+    }
+  }, [cameraStatus, fetchDetectionHistory]);
 
-    return (
-        <div style={{
-            ...slideStyle,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-start',
-            alignItems: 'center',
-            padding: '20px',
-            overflowY: 'auto'
-        }}>
+  // Hàm định dạng thời gian chi tiết
+  const formatDetailedTime = (timestamp) => {
+    try {
+      if (!timestamp) return 'N/A';
+      const date = new Date(timestamp);
+      return format(date, "HH:mm:ss dd/MM/yyyy");
+    } catch (e) {
+      return 'N/A';
+    }
+  };
+
+  return (
+    <div style={{ 
+      ...slideStyle,
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'flex-start',
+      alignItems: 'center',
+      padding: '20px',
+      overflowY: 'auto'
+    }}>
             <h2 style={{
                 color: darkMode ? 'white' : '#2f3542',
                 marginBottom: '30px',
@@ -3575,120 +3629,109 @@ const CameraSlide = () => {
 
             {/* Lịch sử phát hiện */}
             {cameraStatus && (
-                <div style={{
-                    width: '100%',
-                    maxWidth: '800px',
-                    backgroundColor: darkMode ? '#2f3542' : 'white',
-                    borderRadius: '12px',
-                    padding: '20px',
-                    boxShadow: '0 8px 20px rgba(0,0,0,0.1)'
-                }}>
-                    <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: '15px'
-                    }}>
-                        <h3 style={{
-                            color: darkMode ? 'white' : '#2f3542',
-                            margin: 0,
-                            fontSize: '18px'
-                        }}>
-                            LỊCH SỬ PHÁT HIỆN ({detectionHistory.length})
-                        </h3>
-                        <button
-                            onClick={fetchDetectionHistory}
-                            style={{
-                                backgroundColor: 'transparent',
-                                border: 'none',
-                                color: darkMode ? '#a4b0be' : '#57606f',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                fontSize: '14px'
-                            }}
-                        >
-                            <span style={{ marginRight: '5px' }}>🔄</span>
-                            Làm mới
-                        </button>
-                    </div>
+        <div style={{
+          width: '100%',
+          maxWidth: '800px',
+          backgroundColor: darkMode ? '#2f3542' : 'white',
+          borderRadius: '12px',
+          padding: '20px',
+          boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
+          marginTop: '20px'
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '15px'
+          }}>
+            <h3 style={{
+              color: darkMode ? 'white' : '#2f3542',
+              margin: 0,
+              fontSize: '18px'
+            }}>
+              LỊCH SỬ PHÁT HIỆN ({detectionHistory.length})
+            </h3>
+          </div>
 
-                    {detectionHistory.length > 0 ? (
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-                            gap: '15px'
-                        }}>
-                            {detectionHistory.map((detection, index) => (
-                                <div key={index} style={{
-                                    position: 'relative',
-                                    borderRadius: '8px',
-                                    overflow: 'hidden',
-                                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-                                    aspectRatio: '3/4'
-                                }}>
-                                    {detection.image && (
-                                        <img
-                                            src={`data:image/jpeg;base64,${detection.image}`}
-                                            alt={`Detection ${index}`}
-                                            style={{
-                                                width: '100%',
-                                                height: '100%',
-                                                objectFit: 'cover'
-                                            }}
-                                        />
-                                    )}
-                                    <div style={{
-                                        position: 'absolute',
-                                        bottom: '0',
-                                        left: '0',
-                                        right: '0',
-                                        backgroundColor: 'rgba(0,0,0,0.7)',
-                                        color: 'white',
-                                        padding: '8px',
-                                        fontSize: '12px'
-                                    }}>
-                                        <div style={{ marginBottom: '3px' }}>
-                                            {detection.timestamp ? format(new Date(detection.timestamp), 'HH:mm:ss dd/MM') : 'N/A'}
-                                        </div>
-                                        <div style={{
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center'
-                                        }}>
-                                            <span>👤 {detection.confidence || 'N/A'}%</span>
-                                            {detection.classification && (
-                                                <span style={{
-                                                    backgroundColor: detection.classification === 'Have person' ? '#e74c3c' : '#2ecc71',
-                                                    padding: '2px 6px',
-                                                    borderRadius: '4px',
-                                                    fontSize: '10px'
-                                                }}>
-                                                    {detection.classification === 'Have person' ? 'CÓ NGƯỜI' : 'AN TOÀN'}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div style={{
-                            height: '100px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: darkMode ? '#a4b0be' : '#57606f',
-                            fontSize: '14px',
-                            textAlign: 'center'
-                        }}>
-                            {isLoading ? 'Đang tải lịch sử...' : 'Chưa có phát hiện nào trong lịch sử'}
-                        </div>
-                    )}
+          {detectionHistory.length > 0 ? (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+              gap: '15px'
+            }}>
+              {detectionHistory.map((detection, index) => (
+                <div key={index} style={{
+                  position: 'relative',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+                  aspectRatio: '3/4'
+                }}>
+                  {detection.image && (
+                    <img
+                      src={`data:image/jpeg;base64,${detection.image}`}
+                      alt={`Phát hiện ${formatDetailedTime(detection.timestamp)}`}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  )}
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '0',
+                    left: '0',
+                    right: '0',
+                    backgroundColor: 'rgba(0,0,0,0.7)',
+                    color: 'white',
+                    padding: '8px',
+                    fontSize: '12px'
+                  }}>
+                    <div style={{ 
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <span>🕒 {formatDetailedTime(detection.timestamp)}</span>
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginTop: '5px'
+                    }}>
+                      <span>👤 {detection.confidence || 'N/A'}%</span>
+                      <span style={{
+                        backgroundColor: detection.classification === 'Have person' ? '#e74c3c' : '#2ecc71',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        fontSize: '10px'
+                      }}>
+                        {detection.classification === 'Have person' ? 'CÓ NGƯỜI' : 'AN TOÀN'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-            )}
+              ))}
+            </div>
+          ) : (
+            <div style={{
+              height: '100px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: darkMode ? '#a4b0be' : '#57606f',
+              fontSize: '14px',
+              textAlign: 'center'
+            }}>
+              {isLoading ? 'Đang tải lịch sử...' : 'Chưa có phát hiện nào trong lịch sử'}
+            </div>
+          )}
         </div>
-    );
+      )}
+    </div>
+  );
 };
 
   return (
@@ -3790,6 +3833,7 @@ const CameraSlide = () => {
       </style>
     </div>
   );
+
 };
 
 export default Dashboard;
