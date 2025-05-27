@@ -2,7 +2,9 @@ import mqttClient from "../utils/adafruitService.js";
 
 const updatedFanStatus = async (req, res) => {
   try {
-    const { status } = req.body;
+    const { speed } = req.body;
+const status = speed; // Nếu muốn giữ tên biến "status"
+
     console.log(status);
     await new Promise((resolve, reject) => {
       mqttClient.client.publish(
