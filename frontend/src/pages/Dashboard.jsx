@@ -2916,7 +2916,7 @@ useEffect(() => {
                         "Content-Type": "application/json",
                       },
                       body: JSON.stringify({
-                        status: doorStatus ? "CLOSE" : "OPEN", // Send appropriate command
+                        status: doorStatus ? "OFF" : "ON", // Send appropriate command
                       }),
                     }
                   );
