@@ -36,14 +36,15 @@ except Exception as e:
 db = client["Aihome"]
 collection = db["images"]
 
-def upload_image(image, createdAt, class_name, user_id):
+def upload_image(image, createdAt, class_name, confidence_score, user_id):
     """Upload ảnh lên MongoDB"""
     try:
         image_id = collection.insert_one({
             "user_id": ObjectId(user_id),
             "image": image,
             "createdAt": createdAt,
-            "classification": class_name
+            "classification": class_name,
+            "confidence_score": confidence_score
         }).inserted_id
         print(f"\n🚀 Uploaded image to Mongo with ID: {image_id}")
         return image_id
