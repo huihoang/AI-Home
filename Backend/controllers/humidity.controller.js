@@ -8,7 +8,7 @@ const checkHumidity = async (req, res) => {
     mqttClient.client.on("message", async (topic, message) => {
       if (topic.includes("sensor-humidity")) {
         const humidity = parseFloat(message.toString());
-        const userId = req.params.user_id;
+        const userId = req.query.user_id;
         // const userId = "67d8458df526a4418561a65d";
         const userConfig = await UserConfig.findOne({ user_id: userId });
         if (!userConfig) return;
@@ -25,6 +25,10 @@ const checkHumidity = async (req, res) => {
             status: "unread",
           });
           await notification.save();
+          mqttClient.client.publish(
+            `${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe`,
+            "OFF"
+          );
         } else if (humidity < low) {
           console.log("Độ ẩm dưới ngưỡng!");
           isOverThreshold = true;
@@ -35,6 +39,10 @@ const checkHumidity = async (req, res) => {
             status: "unread",
           });
           await notification.save();
+          mqttClient.client.publish(
+            `${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe`,
+            "OFF"
+          );
         } else {
           console.log("Độ ẩm ở ngưỡng an toàn");
         }

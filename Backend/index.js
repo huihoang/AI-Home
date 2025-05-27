@@ -7,6 +7,8 @@ import { initializeSocket } from "./middleware/socket.js";
 dotenv.config();
 import connectDB from "./config/db.js";
 import router from "./routes/routes.js";
+import voiceRoutes from './routes/voice.routes.js';
+
 
 const app = express();
 const server = http.createServer(app);

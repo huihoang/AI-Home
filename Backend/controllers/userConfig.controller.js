@@ -1,6 +1,7 @@
 import { configDotenv } from "dotenv";
 import UserConfig from "../models/userConfig.model.js";
 import User from "../models/users.model.js";
+import logService from "../utils/log.service.js";
 
 const getUserConfig  = async (req, res) => {
     try {
@@ -42,6 +43,11 @@ const updateUserConfig = async (req,res) => {
             if (notification) config.notification = notification;
             if (schedules) config.schedules = schedules;
         }
+        await logService.createLog(
+            `User_update_config`,
+            `User ${req.user.user_id} have update system config`
+        )
+
         await config.save();
 
         res.status(200).json({
@@ -56,6 +62,8 @@ const updateUserConfig = async (req,res) => {
         });
     }
 }
+
+
 
 
 
@@ -86,7 +94,10 @@ const addSchedule = async (req, res) => {
             enable: enable || false
         })
         await config.save();
-
+        await logService.createLog(
+            `add_schedule`,
+            `User ${req.user.user_id} have added new schedule`
+        )
         res.status(500).json({
             message: 'Schedule added successfully',
             schedule: config.schedules[config.schedules.length - 1],
@@ -126,7 +137,10 @@ const removeSchedule = async (req, res) => {
         
         // Xóa lịch trình khỏi mảng
         config.schedules.splice(scheduleIndex, 1);
-        
+        await logService.createLog(
+            `delete_schedule`,
+            `User ${req.user.user_id} have deleted schedule`
+        )
         await config.save();
         
         res.status(200).json({

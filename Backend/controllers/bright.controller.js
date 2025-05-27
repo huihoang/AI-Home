@@ -8,7 +8,7 @@ const checkBright = async (req, res) => {
     mqttClient.client.on("message", async (topic, message) => {
       if (topic.includes("sensor-light")) {
         const bright = parseFloat(message.toString());
-        const userId = req.params.user_id;
+        const userId = req.query.user_id;
         // const userId = "67d8458df526a4418561a65d";
         const userConfig = await UserConfig.findOne({ user_id: userId });
         if (!userConfig) return;
