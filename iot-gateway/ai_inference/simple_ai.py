@@ -65,9 +65,10 @@ def image_detector(user_id: str):
     confidence_score = prediction[0][index]
 
     # Print prediction and confidence score
-    print("\n🧠 Classification AI: ", class_name, end=" - ", flush=True)
-    print("Confidence Score: ", str(confidence_score * 100), "%", flush=True)
+    confidence_score = str(confidence_score * 100)
+    print("\n🧠 Classification AI: ", class_name, end=" - ")
+    print("Confidence Score: ", confidence_score, "%")
 
     # upload image to MongoDB
-    upload_image(encoded_string, createdAt, class_name, user_id)
-    return f"{class_name} - {int(confidence_score * 100)}%"
+    upload_image(encoded_string, createdAt, class_name, confidence_score, user_id)
+    return f"{class_name} - {confidence_score}%"
