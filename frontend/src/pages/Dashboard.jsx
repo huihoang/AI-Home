@@ -423,10 +423,10 @@ setTimeout(() => {
     };
 
     recognitionRef.current.onend = () => {
-      if (isListening) {
-        recognitionRef.current.start();
-      }
-    };
+  if (isListening && isRecording) {
+    recognitionRef.current.start();
+  }
+};
 
     return () => {
       if (recognitionRef.current) {
@@ -969,10 +969,11 @@ const toggleCamera = useCallback(async () => {
     }
 
     if (isRecording) {
-      recognitionRef.current.stop();
-      setIsRecording(false);
-      return;
-    }
+  recognitionRef.current.stop();
+  setIsRecording(false);
+  setIsListening(false);
+  return;
+}
 
     recognitionRef.current = new window.webkitSpeechRecognition();
     recognitionRef.current.lang = "vi-VN";
@@ -1320,6 +1321,7 @@ const toggleListening = useCallback(() => {
       recognitionRef.current.stop();
       setIsListening(false);
       setIsProcessing(false);
+      recognitionRef.current = null; // Thêm dòng này để reset recognition
       return;
     }
 
@@ -1328,38 +1330,38 @@ const toggleListening = useCallback(() => {
     setIsProcessing(true);
     setIsListening(true);
 
-    // Khởi tạo recognition nếu chưa có
-    if (!recognitionRef.current) {
-      recognitionRef.current = new window.webkitSpeechRecognition();
-      recognitionRef.current.continuous = false; // Chỉ nghe một lần
-      recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = 'vi-VN';
+    // Khởi tạo recognition mới mỗi lần
+    const newRecognition = new window.webkitSpeechRecognition();
+    newRecognition.continuous = false;
+    newRecognition.interimResults = false;
+    newRecognition.lang = 'vi-VN';
 
-      recognitionRef.current.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        setTranscript(transcript);
-        handleVoiceCommand(transcript.toLowerCase().trim());
-        setIsProcessing(false);
-      };
+    newRecognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setTranscript(transcript);
+      handleVoiceCommand(transcript.toLowerCase().trim());
+      setIsProcessing(false);
+    };
 
-      recognitionRef.current.onerror = (event) => {
-        console.error("Lỗi nhận diện giọng nói:", event.error);
-        setIsListening(false);
-        setIsProcessing(false);
-        setCommandFeedback({
-          command: 'error',
-          result: 'Lỗi nhận dạng giọng nói',
-          timestamp: new Date()
-        });
-      };
+    newRecognition.onerror = (event) => {
+      console.error("Lỗi nhận diện giọng nói:", event.error);
+      setIsListening(false);
+      setIsProcessing(false);
+      setCommandFeedback({
+        command: 'error',
+        result: 'Lỗi nhận dạng giọng nói',
+        timestamp: new Date()
+      });
+    };
 
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
-    }
+    newRecognition.onend = () => {
+      setIsListening(false);
+      setIsProcessing(false);
+    };
 
+    recognitionRef.current = newRecognition;
     recognitionRef.current.start();
-  }, [isListening, handleVoiceCommand]);
+}, [isListening, handleVoiceCommand]);
 useEffect(() => {
   const speedMap = { 
     0: 0, 
@@ -2405,13 +2407,13 @@ useEffect(() => {
             darkMode={darkMode}
           />
           <DeviceStatus
-            name="HỆ THỐNG PHƠI ĐỒ"
+            name="CỬA RA VÀO"
             status={doorStatus}
             icon="🚪"
             darkMode={darkMode}
           />
 
-          {fanStatus && (
+          {(
             <div
               style={{
                 display: "flex",
@@ -2877,7 +2879,7 @@ useEffect(() => {
                 fontSize: "20px",
               }}
             >
-              HỆ THỐNG PHƠI ĐỒ
+              CỬA RA VÀO
             </h3>
           </div>
 
@@ -2905,14 +2907,14 @@ useEffect(() => {
                 console.log(doorStatus);
                 try {
                   const response = await fetch(
-                    "http://localhost:8080/hangclothe/update-status",
+                    "http://localhost:8080/door/update-status",
                     {
                       method: "POST",
                       headers: {
                         "Content-Type": "application/json",
                       },
                       body: JSON.stringify({
-                        status: doorStatus ? "OFF" : "ON", // Send appropriate command
+                        status: doorStatus ? "CLOSE" : "OPEN", // Send appropriate command
                       }),
                     }
                   );
@@ -3311,7 +3313,25 @@ const CameraSlide = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+const [currentPage, setCurrentPage] = useState(1);
+  const imagesPerPage = 8;
 
+  // Tính toán phân trang
+  const indexOfLastImage = currentPage * imagesPerPage;
+  const indexOfFirstImage = indexOfLastImage - imagesPerPage;
+  const currentImages = detectionHistory.slice(indexOfFirstImage, indexOfLastImage);
+  const totalPages = Math.ceil(detectionHistory.length / imagesPerPage);
+
+  // Xử lý chuyển trang
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    setCurrentPage(newPage);
+  };
+
+  // Reset trang khi detectionHistory thay đổi
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [detectionHistory]);
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('currentUser'));
     setIsAdmin(user?.role === 'admin');
@@ -3654,12 +3674,13 @@ const CameraSlide = () => {
           </div>
 
           {detectionHistory.length > 0 ? (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-              gap: '15px'
-            }}>
-              {detectionHistory.map((detection, index) => (
+            <>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                gap: '15px'
+              }}>
+                {currentImages.map((detection, index) => (
                 <div key={index} style={{
                   position: 'relative',
                   borderRadius: '8px',
@@ -3714,7 +3735,52 @@ const CameraSlide = () => {
                   </div>
                 </div>
               ))}
-            </div>
+            </div><div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '10px',
+                marginTop: '20px'
+              }}>
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: currentPage === 1 ? '#dfe4ea' : '#3498db',
+                    color: currentPage === 1 ? '#57606f' : 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  Trước
+                </button>
+                
+                <span style={{
+                  color: darkMode ? 'white' : '#2f3542',
+                  minWidth: '50px',
+                  textAlign: 'center'
+                }}>
+                  Trang {currentPage}/{totalPages}
+                </span>
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: currentPage === totalPages ? '#dfe4ea' : '#3498db',
+                    color: currentPage === totalPages ? '#57606f' : 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  Sau
+                </button>
+              </div>
+            </>
           ) : (
             <div style={{
               height: '100px',
