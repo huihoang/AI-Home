@@ -12,14 +12,11 @@ const checkTemperature = async (req, res) => {
       return res.status(400).json({ message: "Thiếu user_id trong request." });
     }
 
-    // Lấy dữ liệu nhiệt độ mới nhất từ Adafruit IO API
     const response = await axios.get(
       "https://io.adafruit.com/api/v2/hoangbk4/feeds/sensor-temperature/data"
     );
-    const latestData = response.data[0]; // Lấy giá trị mới nhất
+    const latestData = response.data[0];
     const temperature = parseFloat(latestData.value);
-
-    console.log(`Nhiệt độ hiện tại: ${temperature}°C`);
 
     // Lấy ngưỡng nhiệt độ từ database
     const userConfig = await UserConfig.findOne({ user_id: userId });
@@ -30,8 +27,6 @@ const checkTemperature = async (req, res) => {
     }
 
     const { high, low } = userConfig.thresholds.temperature;
-
-    console.log(`Ngưỡng nhiệt độ: Cao (${high}°C) - Thấp (${low}°C)`);
 
     if (temperature > high) {
       console.log("Nhiệt độ vượt ngưỡng!");
