@@ -25,6 +25,10 @@ const checkHumidity = async (req, res) => {
             status: "unread",
           });
           await notification.save();
+          mqttClient.client.publish(
+            `${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe`,
+            "OFF"
+          );
         } else if (humidity < low) {
           console.log("Độ ẩm dưới ngưỡng!");
           isOverThreshold = true;
@@ -35,6 +39,10 @@ const checkHumidity = async (req, res) => {
             status: "unread",
           });
           await notification.save();
+          mqttClient.client.publish(
+            `${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe`,
+            "OFF"
+          );
         } else {
           console.log("Độ ẩm ở ngưỡng an toàn");
         }
