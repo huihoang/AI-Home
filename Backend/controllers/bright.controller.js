@@ -20,8 +20,6 @@ const checkBright = async (req, res) => {
     const latestData = response.data[0];
     const bright = parseFloat(latestData.value);
 
-    console.log(`Ánh sáng hiện tại: ${bright}%`);
-
     // Lấy ngưỡng nhiệt độ từ database
     const userConfig = await UserConfig.findOne({ user_id: userId });
     if (!userConfig) {
@@ -31,8 +29,6 @@ const checkBright = async (req, res) => {
     }
 
     const { high, low } = userConfig.thresholds.brightness;
-
-    console.log(`Ngưỡng ánh sáng: Cao (${high}%) - Thấp (${low}%)`);
 
     if (bright > high) {
       console.log("Ánh sáng vượt ngưỡng!");
@@ -45,9 +41,8 @@ const checkBright = async (req, res) => {
       //   message: msg,
       //   status: "unread",
       // });
-      await notification.save();
+      //await Notification.save();
     } else if (bright < low) {
-      console.log("Ánh sáng dưới ngưỡng!");
       isOverThreshold = true;
       msg = `Ánh sáng dưới ngưỡng (${bright}% so với ngưỡng ${low}%)!`;
 
@@ -57,7 +52,7 @@ const checkBright = async (req, res) => {
       //   message: msg,
       //   status: "unread",
       // });
-      await notification.save();
+      // await Notification.save();
     } else {
       console.log("Ánh sáng ở ngưỡng an toàn.");
     }
