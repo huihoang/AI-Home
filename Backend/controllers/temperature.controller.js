@@ -15,6 +15,7 @@ const checkTemperature = async (req, res) => {
     mqttClient.client.on("message", async (topic, message) => {
       if (topic.includes("sensor-temperature")) {
         temperature = parseFloat(message.toString());
+        console.log("Nhiệt độ: ", temperature);
       }
     });
     if (temperature > high) {

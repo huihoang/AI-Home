@@ -12,7 +12,6 @@ const checkBright = async (req, res) => {
     const userConfig = await UserConfig.findOne({ user_id: userId });
     if (!userConfig) return;
     const { high, low } = userConfig.thresholds.brightness;
-    console.log("high, low: ", high, low);
     mqttClient.client.on("message", async (topic, message) => {
       if (topic.includes("sensor-light")) {
         bright = parseFloat(message.toString());
