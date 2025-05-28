@@ -1,56 +1,80 @@
 import axios from "axios";
 import UserConfig from "../models/userConfig.model.js";
 import Notification from "../models/notification.model.js";
-import mqttClient from "../utils/adafruitService.js";
+import { getIO } from "../middleware/socket.js";
+
+let lastThresholdState = {};
+
 const checkTemperature = async (req, res) => {
-  let isOverThreshold = false;
-  let msg = "";
-  let temperature = -1;
   try {
     const userId = req.query.user_id;
-    // const userId = "67d8458df526a4418561a65d";
-    const userConfig = await UserConfig.findOne({ user_id: userId });
-    if (!userConfig) return;
-    const { high, low } = userConfig.thresholds.temperature;
-    mqttClient.client.on("message", async (topic, message) => {
-      if (topic.includes("sensor-temperature")) {
-        temperature = parseFloat(message.toString());
-        console.log("Nhiệt độ: ", temperature);
-      }
-    });
-    if (temperature > high) {
-      console.log("Nhiệt độ vượt ngưỡng!");
-      isOverThreshold = true;
-      msg = `Nhiệt độ vượt ngưỡng ${temperature}°C - so với ngưỡng ${high}°C!`;
+    if (!userId) {
+      return res.status(400).json({ message: "Thiếu user_id trong request." });
+    }
 
-      const notification = new Notification({
-        user_id: userConfig.user_id,
-        message: msg,
-        status: "unread",
-      });
-      await notification.save();
-    } else if (temperature < low && temperature > 0) {
+    // Lấy dữ liệu nhiệt độ mới nhất từ API Adafruit IO
+    const response = await axios.get(
+      "https://io.adafruit.com/api/v2/hoangbk4/feeds/sensor-temperature/data"
+    );
+    const latestData = response.data[0];
+    const temperature = parseFloat(latestData.value);
+
+    console.log(`Nhiệt độ hiện tại: ${temperature}°C`);
+
+    const userConfig = await UserConfig.findOne({ user_id: userId });
+    if (!userConfig) {
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy cấu hình người dùng." });
+    }
+
+    const { high, low } = userConfig.thresholds.temperature;
+
+    console.log(`Ngưỡng nhiệt độ: Cao (${high}°C) - Thấp (${low}°C)`);
+
+    let isOverThreshold = false;
+    let msg = "";
+
+    // Kiểm tra trạng thái trước đó
+    if (!lastThresholdState[userId]) {
+      lastThresholdState[userId] = "NORMAL";
+    }
+
+    if (temperature > high && lastThresholdState[userId] !== "HIGH") {
+      console.log("Nhiệt độ vượt ngưỡng! Gửi thông báo...");
+      isOverThreshold = true;
+      msg = `Nhiệt độ vượt ngưỡng (${temperature}°C - Cao ${high}°C)!`;
+
+      lastThresholdState[userId] = "HIGH";
+    } else if (temperature < low && lastThresholdState[userId] !== "LOW") {
       console.log("Nhiệt độ dưới ngưỡng! Gửi thông báo...");
       isOverThreshold = true;
-      msg = `Nhiệt độ dưới ngưỡng ${low}°C - so với ngưỡng ${temperature}°C!`;
+      msg = `Nhiệt độ dưới ngưỡng (${temperature}°C - Thấp ${low}°C)!`;
 
-      const notification = new Notification({
-        user_id: userConfig.user_id,
-        message: msg,
-        status: "unread",
-      });
-      await notification.save();
-    } else {
-      console.log("Nhiệt độ ở ngưỡng an toàn");
+      lastThresholdState[userId] = "LOW";
+    } else if (
+      temperature >= low &&
+      temperature <= high &&
+      lastThresholdState[userId] !== "NORMAL"
+    ) {
+      console.log("Nhiệt độ trở lại bình thường.");
+      msg = `Nhiệt độ ổn định ở mức ${temperature}°C.`;
+      lastThresholdState[userId] = "NORMAL";
     }
-    res.json({
-      isOverThreshold: isOverThreshold,
-      msg: msg,
-      temperature: temperature,
+
+    // Gửi thông báo qua WebSocket
+    const io = getIO();
+    io.to(`user-${userId}`).emit("new-notification", {
+      isOverThreshold,
+      msg,
+      temperature,
     });
+
+    res.json({ isOverThreshold, msg, temperature });
   } catch (error) {
     console.error("Lỗi khi lấy dữ liệu từ Adafruit IO:", error);
     res.status(500).json({ message: "Không thể lấy trạng thái nhiệt độ." });
   }
 };
+
 export default { checkTemperature };
