@@ -1,7 +1,7 @@
 import axios from "axios";
 import UserConfig from "../models/userConfig.model.js";
 import Notification from "../models/notification.model.js";
-
+import mqttClient from "../utils/adafruitService.js";
 const checkBright = async (req, res) => {
   let isOverThreshold = false;
   let msg = "";

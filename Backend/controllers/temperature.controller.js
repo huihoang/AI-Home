@@ -1,7 +1,7 @@
 import axios from "axios";
 import UserConfig from "../models/userConfig.model.js";
 import Notification from "../models/notification.model.js";
-
+import mqttClient from "../utils/adafruitService.js";
 const checkTemperature = async (req, res) => {
   let isOverThreshold = false;
   let msg = "";
@@ -52,5 +52,4 @@ const checkTemperature = async (req, res) => {
     res.status(500).json({ message: "Không thể lấy trạng thái nhiệt độ." });
   }
 };
-
 export default { checkTemperature };
