@@ -96,26 +96,36 @@ const loginUser = async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    // Gọi Python script
+    //-------------Chạy xử lý camera và voice-control------------------------
+    
+    global.pythonProcesses = global.pythonProcesses || {};
+    if (global.pythonProcesses[user._id]) {
+      global.pythonProcesses[user._id].kill('SIGTERM');
+      console.log(`💀 Killed previous process for user ${user._id}`);
+    }
+
     const pythonProcess = spawn('python', ['main.py', user._id], {
-      cwd: '../iot-gateway', // chạy ở thư mục chính xác
+      cwd: '../iot-gateway',
       env: {
         ...process.env,
-        PYTHONIOENCODING: 'utf-8', // để in được emoji và ký tự unicode
+        PYTHONIOENCODING: 'utf-8',
       }
     });
-
+    global.pythonProcesses[user._id] = pythonProcess;
+    
     pythonProcess.stdout.on('data', (data) => {
       console.log(`[PYTHON STDOUT] ${data.toString()}`);
     });
-
+    
     // pythonProcess.stderr.on('data', (data) => {
     //   console.error(`[PYTHON STDERR] ${data.toString()}`);
     // });
-
+    
     pythonProcess.on('close', (code) => {
       console.log(`[PYTHON] Process exited with code ${code}`);
     });
+    
+    //-----------------------------------------------------------------------
 
     res.status(200).json({
   token,
