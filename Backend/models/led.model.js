@@ -6,6 +6,11 @@ const ledSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  user_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "User"
+    },
   value: {
     type: String, 
   },

@@ -25,6 +25,7 @@ const FEEDS = [
  */
 const syncFeedData = async (req, res) => {
   try {
+    const userId = req.user.user_id;
     const { feedKey } = req.params;
     const limit = req.query.limit || 50;
     
@@ -54,6 +55,7 @@ const syncFeedData = async (req, res) => {
         if (!existingData) {
           const feedDataItem = new FeedModel({
             feed_id: item.id,
+            user_id: userId,
             value: item.value,
             created_epoch: new Date(item.created_at).getTime() / 1000,
             expiration: item.expiration ? new Date(item.expiration) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
@@ -89,6 +91,7 @@ const getFeedData = async (req, res) => {
     const { feedKey } = req.params;
     const limit = parseInt(req.query.limit) || 50;
     const skip = parseInt(req.query.skip) || 0;
+    const userId = req.user.user_id; // Lấy user_id từ người dùng đã đăng nhập
     
     // Nếu feedKey là 'all', cần truy vấn tất cả các collection
     if (feedKey === 'all') {
@@ -98,7 +101,7 @@ const getFeedData = async (req, res) => {
       
       for (const feed of feeds) {
         const FeedModel = getFeedModel(feed);
-        const query = {};
+        const query = { user_id: userId }; // Thêm điều kiện user_id
         
         // Lọc theo khoảng thời gian
         if (req.query.startDate && req.query.endDate) {
@@ -126,7 +129,7 @@ const getFeedData = async (req, res) => {
     const FeedModel = getFeedModel(feedKey);
     
     // Tạo các điều kiện lọc
-    const query = {};
+    const query = { user_id: userId }; // Thêm điều kiện user_id
     
     // Lọc theo khoảng thời gian
     if (req.query.startDate && req.query.endDate) {
@@ -295,7 +298,8 @@ const getFeedStats = async (req, res) => {
 const syncAllFeeds = async (req, res) => {
   try {
     const results = {};
-    
+    const userId = req.user.user_id;
+    console.log(userId);
     for (const feed of FEEDS) {
       try {
         // Lấy model tương ứng với feed
@@ -318,6 +322,7 @@ const syncAllFeeds = async (req, res) => {
           if (!existingData) {
             const feedDataItem = new FeedModel({
               feed_id: item.id,
+              user_id: userId,
               value: item.value,
               created_epoch: new Date(item.created_at).getTime() / 1000,
               expiration: item.expiration ? new Date(item.expiration) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
@@ -361,20 +366,21 @@ const syncAllFeeds = async (req, res) => {
 const cleanupOldData = async (req, res) => {
   try {
     const { days } = req.body;
+    const userId = req.user.user_id; // Lấy user_id từ người dùng đã đăng nhập
     
     // Xử lý đúng trường hợp days = 0
-    // Sử dụng days === undefined thay vì days || 30
     const daysToKeep = days !== undefined ? days : 30;
     
-    let query = {};
+    // Khởi tạo query với user_id
+    let query = { user_id: userId };
     
-    // Nếu days > 0, thì tạo truy vấn với cutoffDate
+    // Nếu days > 0, thì thêm điều kiện cutoffDate
     if (daysToKeep > 0) {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
-      query = { create_at: { $lt: cutoffDate } };
+      query.create_at = { $lt: cutoffDate };
     }
-    // Nếu days = 0, query sẽ là {}, tức là xóa tất cả
+    // Nếu days = 0, query chỉ có user_id, xóa tất cả dữ liệu của user đó
     
     const results = {};
     let totalDeleted = 0;
@@ -390,8 +396,8 @@ const cleanupOldData = async (req, res) => {
     
     res.status(200).json({
       message: daysToKeep === 0 
-        ? `Deleted all records (${totalDeleted} total)` 
-        : `Deleted ${totalDeleted} old records older than ${daysToKeep} days`,
+        ? `Deleted all your records (${totalDeleted} total)` 
+        : `Deleted ${totalDeleted} of your records older than ${daysToKeep} days`,
       deletedCount: totalDeleted,
       details: results
     });
