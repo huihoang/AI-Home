@@ -1,18 +1,18 @@
 import mongoose from "mongoose";
 
-const tempSchema = new mongoose.Schema({
+const doorSchema = new mongoose.Schema({
   feed_id: {
     type: String,
     required: true,
     unique: true
   },
   user_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: "User"
-    },
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: "User"
+  },
   value: {
-    type: Number, 
+    type: String, 
   },
   created_epoch: {
     type: Number,
@@ -28,12 +28,12 @@ const tempSchema = new mongoose.Schema({
   },
   sensor_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Sensor'
+    ref: 'Device'
   }
 }, {
-  collection: 'sensor-temperature'
+  collection: 'button-door'
 });
 
-const TempFeed = mongoose.model('TempFeed', tempSchema);
+const DoorFeed = mongoose.model('DoorFeed', doorSchema);
 
-export default TempFeed;
+export default DoorFeed;

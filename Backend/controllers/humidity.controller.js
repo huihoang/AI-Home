@@ -2,6 +2,7 @@ import axios from "axios";
 import mqttClient from "../utils/adafruitService.js";
 import UserConfig from "../models/userConfig.model.js";
 import Notification from "../models/notification.model.js";
+
 const checkHumidity = async (req, res) => {
   let isOverThreshold = false;
   let msg = "";
@@ -13,6 +14,7 @@ const checkHumidity = async (req, res) => {
     if (!userConfig) return;
 
     const { high, low } = userConfig.thresholds.humidity;
+
     const hangClotheStatus = await axios.get(
       "https://io.adafruit.com/api/v2/hoangbk4/feeds/button-hang-clothe/data"
     );
@@ -26,6 +28,7 @@ const checkHumidity = async (req, res) => {
       console.log("Độ ẩm vượt ngưỡng!");
       isOverThreshold = true;
       msg = `Độ ẩm vượt ngưỡng ${humidity}% - so với ngưỡng ${high}%!`;
+
       const notification = new Notification({
         user_id: userConfig.user_id,
         message: msg,
@@ -40,6 +43,7 @@ const checkHumidity = async (req, res) => {
       console.log("Độ ẩm dưới ngưỡng!");
       isOverThreshold = true;
       msg = `Độ ẩm dưới ngưỡng ${low}% - so với ngưỡng ${humidity}%!`;
+
       const notification = new Notification({
         user_id: userConfig.user_id,
         message: msg,
@@ -59,8 +63,8 @@ const checkHumidity = async (req, res) => {
       humidity: humidity,
     });
   } catch (error) {
-    console.error("Lỗi khi lấy dữ liệu:", error);
-    res.status(500).json({ message: "Không thể lấy dữ liệu" });
+    console.error("Lỗi khi lấy dữ liệu từ Adafruit IO:", error);
+    res.status(500).json({ message: "Không thể lấy trạng thái nhiệt độ." });
   }
 };
 

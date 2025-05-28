@@ -6,6 +6,11 @@ const brightSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  user_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: "User"
+  },
   value: {
     type: Number, 
   },
@@ -26,7 +31,7 @@ const brightSchema = new mongoose.Schema({
     ref: 'Sensor'
   }
 }, {
-  collection: 'feed_bright'
+  collection: 'sensor-light'
 });
 
 const BrightFeed = mongoose.model('BrightFeed', brightSchema);

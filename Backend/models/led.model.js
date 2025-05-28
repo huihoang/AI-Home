@@ -6,8 +6,13 @@ const ledSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  user_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "User"
+    },
   value: {
-    type: Number, 
+    type: String, 
   },
   created_epoch: {
     type: Number,
@@ -26,7 +31,7 @@ const ledSchema = new mongoose.Schema({
     ref: 'Sensor'
   }
 }, {
-  collection: 'feed_led'
+  collection: 'button_led'
 });
 
 const LedFeed = mongoose.model('LedFeed', ledSchema);

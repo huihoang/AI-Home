@@ -2,21 +2,35 @@ import mongoose from "mongoose";
 import Sensor from "../models/sensors.model.js";
 import { getFeedModel } from "../utils/feed-models.js";
 
-// Cấu hình Adafruit IO API
 const ADAFRUIT_USERNAME = 'hoangbk4';
 const BASE_URL = 'https://io.adafruit.com/api/v2';
+
+const FEEDS = [
+  'sensor-light', 
+  'sensor-camera', 
+  'sensor-humidity', 
+  'sensor-motion', 
+  'sensor-temperature',
+  'button-led',
+  'button-door',
+  'button-fan',
+  'button-hang-clothe',
+  'log-voice'
+];
+
+
 
 /**
  * Đồng bộ dữ liệu từ một feed (với feedKey từ URL parameter)
  */
 const syncFeedData = async (req, res) => {
   try {
+    const userId = req.user.user_id;
     const { feedKey } = req.params;
     const limit = req.query.limit || 50;
     
     // Kiểm tra feed key hợp lệ
-    const validFeeds = ['bbc-bright', 'bbc-camera', 'bbc-humidity', 'bbc-led', 'bbc-motion', 'bbc-temp'];
-    if (!validFeeds.includes(feedKey)) {
+    if (!FEEDS.includes(feedKey)) {
       return res.status(400).json({ message: 'Invalid feed key' });
     }
 
@@ -41,6 +55,7 @@ const syncFeedData = async (req, res) => {
         if (!existingData) {
           const feedDataItem = new FeedModel({
             feed_id: item.id,
+            user_id: userId,
             value: item.value,
             created_epoch: new Date(item.created_at).getTime() / 1000,
             expiration: item.expiration ? new Date(item.expiration) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
@@ -76,16 +91,17 @@ const getFeedData = async (req, res) => {
     const { feedKey } = req.params;
     const limit = parseInt(req.query.limit) || 50;
     const skip = parseInt(req.query.skip) || 0;
+    const userId = req.user.user_id; // Lấy user_id từ người dùng đã đăng nhập
     
     // Nếu feedKey là 'all', cần truy vấn tất cả các collection
     if (feedKey === 'all') {
       // Trường hợp đặc biệt - lấy dữ liệu từ tất cả các feed
-      const feeds = ['bbc-bright', 'bbc-camera', 'bbc-humidity', 'bbc-led', 'bbc-motion', 'bbc-temp'];
+      const feeds = ['sensor-light', 'sensor-camera', 'sensor-humidity', 'sensor-motion', 'sensor-temperature'];
       const allData = {};
       
       for (const feed of feeds) {
         const FeedModel = getFeedModel(feed);
-        const query = {};
+        const query = { user_id: userId }; // Thêm điều kiện user_id
         
         // Lọc theo khoảng thời gian
         if (req.query.startDate && req.query.endDate) {
@@ -113,7 +129,7 @@ const getFeedData = async (req, res) => {
     const FeedModel = getFeedModel(feedKey);
     
     // Tạo các điều kiện lọc
-    const query = {};
+    const query = { user_id: userId }; // Thêm điều kiện user_id
     
     // Lọc theo khoảng thời gian
     if (req.query.startDate && req.query.endDate) {
@@ -154,9 +170,9 @@ const getLatestOneFeedData = async (req, res) => {
   try {
     const { feedKey } = req.params;
     
-    // Kiểm tra feed key hợp lệ
-    const validFeeds = ['bbc-bright', 'bbc-camera', 'bbc-humidity', 'bbc-led', 'bbc-motion', 'bbc-temp'];
-    if (!validFeeds.includes(feedKey)) {
+   
+    
+    if (!FEEDS.includes(feedKey)) {
       return res.status(400).json({ message: 'Invalid feed key' });
     }
     
@@ -185,18 +201,9 @@ const getLatestOneFeedData = async (req, res) => {
  */
 const getLatestFeedData = async (req, res) => {
   try {
-    const feeds = [
-      'bbc-bright', 
-      'bbc-camera', 
-      'bbc-humidity', 
-      'bbc-led', 
-      'bbc-motion', 
-      'bbc-temp'
-    ];
-    
     const latestData = {};
     
-    for (const feed of feeds) {
+    for (const feed of FEEDS) {
       const FeedModel = getFeedModel(feed);
       
       const data = await FeedModel.findOne()
@@ -223,19 +230,10 @@ const getLatestFeedData = async (req, res) => {
  */
 const getFeedStats = async (req, res) => {
   try {
-    const feeds = [
-      'bbc-bright', 
-      'bbc-camera', 
-      'bbc-humidity', 
-      'bbc-led', 
-      'bbc-motion', 
-      'bbc-temp'
-    ];
-    
     const stats = {};
     let totalRecords = 0;
     
-    for (const feed of feeds) {
+    for (const feed of FEEDS) {
       const FeedModel = getFeedModel(feed);
       
       // Đếm số lượng bản ghi
@@ -250,7 +248,7 @@ const getFeedStats = async (req, res) => {
       let maxValue = null;
       let avgValue = null;
       
-      if (['bbc-bright', 'bbc-humidity', 'bbc-temp'].includes(feed)) {
+      if (['sensor-light', 'sensor-humidity', 'sensor-temperature'].includes(feed)) {
         const aggregateResult = await FeedModel.aggregate([
           {
             $group: {
@@ -299,18 +297,10 @@ const getFeedStats = async (req, res) => {
  */
 const syncAllFeeds = async (req, res) => {
   try {
-    const feeds = [
-      'bbc-bright', 
-      'bbc-camera', 
-      'bbc-humidity', 
-      'bbc-led', 
-      'bbc-motion', 
-      'bbc-temp'
-    ];
-    
     const results = {};
-    
-    for (const feed of feeds) {
+    const userId = req.user.user_id;
+    console.log(userId);
+    for (const feed of FEEDS) {
       try {
         // Lấy model tương ứng với feed
         const FeedModel = getFeedModel(feed);
@@ -332,6 +322,7 @@ const syncAllFeeds = async (req, res) => {
           if (!existingData) {
             const feedDataItem = new FeedModel({
               feed_id: item.id,
+              user_id: userId,
               value: item.value,
               created_epoch: new Date(item.created_at).getTime() / 1000,
               expiration: item.expiration ? new Date(item.expiration) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
@@ -375,36 +366,38 @@ const syncAllFeeds = async (req, res) => {
 const cleanupOldData = async (req, res) => {
   try {
     const { days } = req.body;
-    const daysToKeep = days || 30; 
+    const userId = req.user.user_id; // Lấy user_id từ người dùng đã đăng nhập
     
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+    // Xử lý đúng trường hợp days = 0
+    const daysToKeep = days !== undefined ? days : 30;
     
-    const feeds = [
-      'bbc-bright', 
-      'bbc-camera', 
-      'bbc-humidity', 
-      'bbc-led', 
-      'bbc-motion', 
-      'bbc-temp'
-    ];
+    // Khởi tạo query với user_id
+    let query = { user_id: userId };
+    
+    // Nếu days > 0, thì thêm điều kiện cutoffDate
+    if (daysToKeep > 0) {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+      query.create_at = { $lt: cutoffDate };
+    }
+    // Nếu days = 0, query chỉ có user_id, xóa tất cả dữ liệu của user đó
     
     const results = {};
     let totalDeleted = 0;
     
-    for (const feed of feeds) {
+    for (const feed of FEEDS) {
       const FeedModel = getFeedModel(feed);
       
-      const result = await FeedModel.deleteMany({
-        create_at: { $lt: cutoffDate }
-      });
+      const result = await FeedModel.deleteMany(query);
       
       results[feed] = result.deletedCount;
       totalDeleted += result.deletedCount;
     }
     
     res.status(200).json({
-      message: `Deleted ${totalDeleted} old records`,
+      message: daysToKeep === 0 
+        ? `Deleted all your records (${totalDeleted} total)` 
+        : `Deleted ${totalDeleted} of your records older than ${daysToKeep} days`,
       deletedCount: totalDeleted,
       details: results
     });

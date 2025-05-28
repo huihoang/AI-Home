@@ -1,6 +1,7 @@
-import mqttClient from "../utils/adafruitService.js";
+import axios from "axios";
 import UserConfig from "../models/userConfig.model.js";
 import Notification from "../models/notification.model.js";
+
 const checkTemperature = async (req, res) => {
   let isOverThreshold = false;
   let msg = "";
@@ -47,8 +48,8 @@ const checkTemperature = async (req, res) => {
       temperature: temperature,
     });
   } catch (error) {
-    console.error("Lỗi khi lấy trạng thái:", error);
-    res.status(500).json({ message: "Không thể lấy trạng thá." });
+    console.error("Lỗi khi lấy dữ liệu từ Adafruit IO:", error);
+    res.status(500).json({ message: "Không thể lấy trạng thái nhiệt độ." });
   }
 };
 
