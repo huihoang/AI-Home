@@ -66,6 +66,8 @@ const updatedVoiceStatus = async (req, res) => {
     return res.json({
       message: `Lệnh được hiểu từ giọng nói là: ${latestTopic} ${latestMessage}`,
       success: success,
+      device: latestTopic.split("-")[1], // led/fan/door
+      deviceStatus: latestMessage.toUpperCase() // ON/OFF
     });
 
   } catch (error) {
