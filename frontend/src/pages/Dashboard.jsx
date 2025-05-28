@@ -275,6 +275,7 @@ setTimeout(() => {
 
     // Xử lý nhiệt độ
     if (tempRes.data.isOverThreshold) {
+      console.log(tempRes.data)
       const status = tempRes.data.currentValue > thresholds.temperature.max ? "CAO" : "THẤP";
       const threshold = tempRes.data.currentValue > thresholds.temperature.max 
         ? thresholds.temperature.max 
@@ -629,105 +630,90 @@ const [cameraImages, setCameraImages] = useState([]);
 
 
 
+  
   useEffect(() => {
-    if (ledStatus) {
-      const interval = setInterval(() => {
-        // 30% khả năng phát hiện người
-        if (Math.random() < 0.3) {
-          const confidence = Math.floor(Math.random() * 30) + 70; // 70-100%
-          const newDetection = {
-            timestamp: new Date(),
-            confidence,
-            image: `https://picsum.photos/200/300?random=${Math.floor(Math.random() * 1000)}`
-          };
-          setDetectionHistory(prev => [newDetection, ...prev.slice(0, 9)]);
+  const fetchData = async () => {
+    try {
+      const [tempRes, humidityRes, brightnessRes] = await Promise.all([
+        axios.get(API_URL_TEMP),
+        axios.get(API_URL_HUMIDITY),
+        axios.get(API_URL_BRIGHTNESS)
+      ]);
 
-          // Thêm vào lịch sử hệ thống
-          const newEntry = {
-            timestamp: new Date(),
-            event: `Camera phát hiện người (${confidence}%)`,
-            type: 'camera'
-          };
-          setSystemHistory(prev => [newEntry, ...prev.slice(0, 99)]);
+      const now = new Date();
+
+      const nextSensorDataHistory = {
+        temperature: [...sensorDataHistory.temperature],
+        humidity: [...sensorDataHistory.humidity],
+        brightness: [...sensorDataHistory.brightness]
+      };
+
+      if (tempRes.data.length > 0) {
+        const latestTemperature = parseFloat(tempRes.data[0].value);
+        if (latestTemperature !== temperature) {
+          setTemperature(latestTemperature);
+          nextSensorDataHistory.temperature = [
+            ...nextSensorDataHistory.temperature.slice(-11),
+            { value: latestTemperature, time: now }
+          ];
         }
-      }, 10000); // Kiểm tra mỗi 10 giây
-
-      return () => clearInterval(interval);
-    }
-  }, [ledStatus]);
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [tempRes, humidityRes, brightnessRes] = await Promise.all([
-          axios.get(API_URL_TEMP),
-          axios.get(API_URL_HUMIDITY),
-          axios.get(API_URL_BRIGHTNESS)
-        ]);
-
-        const now = new Date();
-        const timeLabel = format(now, 'HH:mm:ss');
-
-        if (tempRes.data.length > 0) {
-          const latestTemperature = parseFloat(tempRes.data[0].value);
-          if (latestTemperature !== temperature) {
-            setTemperature(latestTemperature);
-            setSensorDataHistory(prev => ({
-              ...prev,
-              temperature: [...prev.temperature.slice(-11), { value: latestTemperature, time: now }]
-            }));
-          }
-        }
-
-        if (humidityRes.data.length > 0) {
-          const latestHumidity = parseFloat(humidityRes.data[0].value);
-          if (latestHumidity !== humidity) {
-            setHumidity(latestHumidity);
-            setSensorDataHistory(prev => ({
-              ...prev,
-              humidity: [...prev.humidity.slice(-11), { value: latestHumidity, time: now }]
-            }));
-          }
-        }
-
-        if (brightnessRes.data.length > 0) {
-          const latestBrightness = parseFloat(brightnessRes.data[0].value);
-          if (latestBrightness !== brightness) {
-            setBrightness(latestBrightness);
-            setSensorDataHistory(prev => ({
-              ...prev,
-              brightness: [...prev.brightness.slice(-11), { value: latestBrightness, time: now }]
-            }));
-          }
-        }
-
-        // Cập nhật biểu đồ
-        setChartData(prev => {
-          const timeLabels = sensorDataHistory.temperature.map(item => format(item.time, 'HH:mm:ss'));
-
-          return {
-            labels: timeLabels,
-            datasets: [
-              {
-                ...prev.datasets[0],
-                data: sensorDataHistory.temperature.map(item => item.value)
-              },
-              {
-                ...prev.datasets[1],
-                data: sensorDataHistory.humidity.map(item => item.value)
-              },
-              {
-                ...prev.datasets[2],
-                data: sensorDataHistory.brightness.map(item => item.value)
-              }
-            ]
-          };
-        });
-
-      } catch (error) {
-        console.error('Error fetching sensor data:', error);
       }
-    };
-  }, [temperature, humidity, brightness]);
+
+      if (humidityRes.data.length > 0) {
+        const latestHumidity = parseFloat(humidityRes.data[0].value);
+        if (latestHumidity !== humidity) {
+          setHumidity(latestHumidity);
+          nextSensorDataHistory.humidity = [
+            ...nextSensorDataHistory.humidity.slice(-11),
+            { value: latestHumidity, time: now }
+          ];
+        }
+      }
+
+      if (brightnessRes.data.length > 0) {
+        const latestBrightness = parseFloat(brightnessRes.data[0].value);
+        if (latestBrightness !== brightness) {
+          setBrightness(latestBrightness);
+          nextSensorDataHistory.brightness = [
+            ...nextSensorDataHistory.brightness.slice(-11),
+            { value: latestBrightness, time: now }
+          ];
+        }
+      }
+
+      setSensorDataHistory(nextSensorDataHistory);
+
+      const timeLabels = nextSensorDataHistory.temperature
+        .filter(item => item.time && isValid(new Date(item.time)))
+        .map(item => format(new Date(item.time), 'HH:mm:ss'));
+
+
+      setChartData(prev => ({
+        labels: timeLabels,
+        datasets: [
+          {
+            ...prev.datasets[0],
+            data: nextSensorDataHistory.temperature.map(item => item.value)
+          },
+          {
+            ...prev.datasets[1],
+            data: nextSensorDataHistory.humidity.map(item => item.value)
+          },
+          {
+            ...prev.datasets[2],
+            data: nextSensorDataHistory.brightness.map(item => item.value)
+          }
+        ]
+      }));
+
+    } catch (error) {
+      console.error('Lỗi khi lấy dữ liệu cảm biến:', error);
+    }
+  };
+
+  fetchData(); // Gọi khi mount lần đầu
+
+}, [temperature, humidity, brightness]);
 
   // Calendar logic
   // Load ghi chú từ localStorage khi khởi động
@@ -3411,14 +3397,15 @@ const [currentPage, setCurrentPage] = useState(1);
 
   // Hàm định dạng thời gian chi tiết
   const formatDetailedTime = (timestamp) => {
-    try {
-      if (!timestamp) return 'N/A';
-      const date = new Date(timestamp);
-      return format(date, "HH:mm:ss dd/MM/yyyy");
-    } catch (e) {
-      return 'N/A';
-    }
-  };
+  try {
+    if (!timestamp) return 'N/A';
+    const date = new Date(timestamp);
+    return format(date, "HH:mm:ss dd/MM/yyyy"); // bạn có thể đổi thành "dd/MM/yyyy HH:mm:ss" nếu muốn ngày trước
+  } catch (e) {
+    return 'N/A';
+  }
+};
+
 
   return (
     <div style={{ 
@@ -3472,19 +3459,16 @@ const [currentPage, setCurrentPage] = useState(1);
                         </div>
                     ) : cameraImage && cameraImage.image ? (
                         <>
-                            <img 
-                                src={`data:image/jpeg;base64,${cameraImage.image}`}
-                                alt="Camera feed"
-                                style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    objectFit: 'cover'
-                                }}
-                                onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.src = ''; // Xóa src nếu có lỗi
-                                }}
-                            />
+                            <img
+  src={`data:image/jpeg;base64,${detection.image}`}
+  alt={`📅 ${formatDetailedTime(detection.createdAt)} - 👤 ${detection.confidence_score || 'N/A'}%`}
+  style={{
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover'
+  }}
+/>
+
                             <div style={{
                                 position: 'absolute',
                                 top: '15px',
@@ -3693,7 +3677,7 @@ const [currentPage, setCurrentPage] = useState(1);
                   {detection.image && (
                     <img
                       src={`data:image/jpeg;base64,${detection.image}`}
-                      alt={`Phát hiện ${formatDetailedTime(detection.timestamp)}`}
+                      alt={`Phát hiện ${formatDetailedTime(detection.createdAt)}`}
                       style={{
                         width: '100%',
                         height: '100%',
@@ -3711,28 +3695,20 @@ const [currentPage, setCurrentPage] = useState(1);
                     padding: '8px',
                     fontSize: '12px'
                   }}>
-                    <div style={{ 
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}>
-                      <span>🕒 {formatDetailedTime(detection.timestamp)}</span>
-                    </div>
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginTop: '5px'
-                    }}>
-                      <span>👤 {detection.confidence || 'N/A'}%</span>
-                      <span style={{
-                        backgroundColor: detection.classification === 'Have person' ? '#e74c3c' : '#2ecc71',
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        fontSize: '10px'
-                      }}>
-                        {detection.classification === 'Have person' ? 'CÓ NGƯỜI' : 'AN TOÀN'}
-                      </span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+  <span>📅 {formatDetailedTime(detection.createdAt)}</span>
+</div>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '5px' }}>
+  <span>👤 {detection.confidence_score || 'N/A'}%</span>
+  <span style={{
+    backgroundColor: detection.classification === 'Have person' ? '#e74c3c' : '#2ecc71',
+    padding: '2px 6px',
+    borderRadius: '4px',
+    fontSize: '10px'
+  }}>
+    {detection.classification === 'Have person' ? 'CÓ NGƯỜI' : 'KHÔNG CÓ NGƯỜI'}
+  </span>
+
                     </div>
                   </div>
                 </div>

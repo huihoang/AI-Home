@@ -23,4 +23,8 @@ client.on("connect", () => {
   client.subscribe(`${process.env.ADAFRUIT_USERNAME}/feeds/sensor-temperature`);
 });
 
+client.on("error", (err) => {
+  console.error("Lỗi kết nối MQTT:", err);
+});
+
 export default { client };
