@@ -6,11 +6,11 @@ import feedRoutes from "../routes/feed.routes.js";
 import ledRoutes from "./led.routes.js";
 import fanRoutes from "./fan.routes.js";
 import hangClothRoutes from "./hangClothe.routes.js";
-import userConfig from "./userConfig.routes.js"
-import imageRoutes from "./image.routes.js"
-import voiceRoutes from './voice.routes.js';
+import userConfig from "./userConfig.routes.js";
+import imageRoutes from "./image.routes.js";
+import voiceRoutes from "./voice.routes.js";
 import cameraRoutes from "./camera.routes.js";
-
+import doorRoutes from "./door.routes.js";
 // import mqttClient from "../utils/adafruitService.js";
 const router = express.Router();
 
@@ -21,10 +21,10 @@ router.use("/feeds", feedRoutes);
 router.use("/led", ledRoutes);
 router.use("/fan", fanRoutes);
 router.use("/hangclothe", hangClothRoutes);
+router.use("/door", doorRoutes);
 router.use("/config", userConfig);
 router.use("/voice", voiceRoutes);
 router.use("/images", imageRoutes);
 router.use("/camera", cameraRoutes);
-
 
 export default router;
