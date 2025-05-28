@@ -631,92 +631,98 @@ const [cameraImages, setCameraImages] = useState([]);
 
 
   
-  useEffect(() => {
   const fetchData = async () => {
-    try {
-      const [tempRes, humidityRes, brightnessRes] = await Promise.all([
-        axios.get(API_URL_TEMP),
-        axios.get(API_URL_HUMIDITY),
-        axios.get(API_URL_BRIGHTNESS)
-      ]);
+  try {
+    const [tempRes, humidityRes, brightnessRes] = await Promise.all([
+      axios.get(API_URL_TEMP),
+      axios.get(API_URL_HUMIDITY),
+      axios.get(API_URL_BRIGHTNESS)
+    ]);
 
-      const now = new Date();
+    const now = new Date();
 
-      const nextSensorDataHistory = {
-        temperature: [...sensorDataHistory.temperature],
-        humidity: [...sensorDataHistory.humidity],
-        brightness: [...sensorDataHistory.brightness]
-      };
+    // Tạo bản sao lịch sử cảm biến
+    const nextSensorDataHistory = {
+      temperature: [...sensorDataHistory.temperature],
+      humidity: [...sensorDataHistory.humidity],
+      brightness: [...sensorDataHistory.brightness]
+    };
 
-      if (tempRes.data.length > 0) {
-        const latestTemperature = parseFloat(tempRes.data[0].value);
-        if (latestTemperature !== temperature) {
-          setTemperature(latestTemperature);
-          nextSensorDataHistory.temperature = [
-            ...nextSensorDataHistory.temperature.slice(-11),
-            { value: latestTemperature, time: now }
-          ];
-        }
+    // 👉 Cập nhật nhiệt độ
+    if (tempRes.data.length > 0) {
+      const latestTemperature = parseFloat(tempRes.data[0].value);
+      if (!isNaN(latestTemperature)) {
+        setTemperature(latestTemperature);
+        nextSensorDataHistory.temperature = [
+          ...nextSensorDataHistory.temperature.slice(-11),
+          { value: latestTemperature, time: now }
+        ];
       }
-
-      if (humidityRes.data.length > 0) {
-        const latestHumidity = parseFloat(humidityRes.data[0].value);
-        if (latestHumidity !== humidity) {
-          setHumidity(latestHumidity);
-          nextSensorDataHistory.humidity = [
-            ...nextSensorDataHistory.humidity.slice(-11),
-            { value: latestHumidity, time: now }
-          ];
-        }
-      }
-
-      if (brightnessRes.data.length > 0) {
-        const latestBrightness = parseFloat(brightnessRes.data[0].value);
-        if (latestBrightness !== brightness) {
-          setBrightness(latestBrightness);
-          nextSensorDataHistory.brightness = [
-            ...nextSensorDataHistory.brightness.slice(-11),
-            { value: latestBrightness, time: now }
-          ];
-        }
-      }
-
-      setSensorDataHistory(nextSensorDataHistory);
-
-      const timeLabels = nextSensorDataHistory.temperature
-        .filter(item => item.time && isValid(new Date(item.time)))
-        .map(item => format(new Date(item.time), 'HH:mm:ss'));
-
-
-      setChartData(prev => ({
-        labels: timeLabels,
-        datasets: [
-          {
-            ...prev.datasets[0],
-            data: nextSensorDataHistory.temperature.map(item => item.value)
-          },
-          {
-            ...prev.datasets[1],
-            data: nextSensorDataHistory.humidity.map(item => item.value)
-          },
-          {
-            ...prev.datasets[2],
-            data: nextSensorDataHistory.brightness.map(item => item.value)
-          }
-        ]
-      }));
-
-    } catch (error) {
-      console.error('Lỗi khi lấy dữ liệu cảm biến:', error);
     }
-  };
 
-  fetchData(); // Gọi khi mount lần đầu
+    // 👉 Cập nhật độ ẩm
+    if (humidityRes.data.length > 0) {
+      const latestHumidity = parseFloat(humidityRes.data[0].value);
+      if (!isNaN(latestHumidity)) {
+        setHumidity(latestHumidity);
+        nextSensorDataHistory.humidity = [
+          ...nextSensorDataHistory.humidity.slice(-11),
+          { value: latestHumidity, time: now }
+        ];
+      }
+    }
 
-}, [temperature, humidity, brightness]);
+    // 👉 Cập nhật ánh sáng
+    if (brightnessRes.data.length > 0) {
+      const latestBrightness = parseFloat(brightnessRes.data[0].value);
+      if (!isNaN(latestBrightness)) {
+        setBrightness(latestBrightness);
+        nextSensorDataHistory.brightness = [
+          ...nextSensorDataHistory.brightness.slice(-11),
+          { value: latestBrightness, time: now }
+        ];
+      }
+    }
 
-  // Calendar logic
-  // Load ghi chú từ localStorage khi khởi động
+    // 👉 Cập nhật lại state lịch sử
+    setSensorDataHistory(nextSensorDataHistory);
+
+    // 👉 Tạo nhãn thời gian an toàn
+    const timeLabels = nextSensorDataHistory.temperature
+      .filter(item => item.time && isValid(new Date(item.time)))
+      .map(item => format(new Date(item.time), 'HH:mm:ss'));
+
+    // 👉 Cập nhật dữ liệu biểu đồ
+    setChartData(prev => ({
+      labels: timeLabels,
+      datasets: [
+        {
+          ...prev.datasets[0],
+          data: nextSensorDataHistory.temperature.map(item => item.value)
+        },
+        {
+          ...prev.datasets[1],
+          data: nextSensorDataHistory.humidity.map(item => item.value)
+        },
+        {
+          ...prev.datasets[2],
+          data: nextSensorDataHistory.brightness.map(item => item.value)
+        }
+      ]
+    }));
+
+    console.log("✅ fetchData thành công:", nextSensorDataHistory);
+
+  } catch (error) {
+    console.error('❌ Lỗi khi lấy dữ liệu cảm biến:', error);
+  }
+};
+useEffect(() => {
+  fetchData();
+  const interval = setInterval(fetchData, 10000);
+  return () => clearInterval(interval);
+}, []);
+
   const NoteModal = ({ date, note, onSave, onDelete, onClose }) => {
     const [inputValue, setInputValue] = useState(note || "");
 
