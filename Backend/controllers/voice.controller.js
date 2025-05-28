@@ -68,8 +68,7 @@ const updatedVoiceStatus = async (req, res) => {
       success: success,
       device: latestTopic.split("-")[1], // led/fan/door
       deviceStatus: latestMessage.toUpperCase() // ON/OFF
-});
-
+    });
 
   } catch (error) {
     console.error("Lỗi khi xử lý voice:", error);
