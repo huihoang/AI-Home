@@ -26,7 +26,7 @@ const humiditySchema = new mongoose.Schema({
     ref: 'Sensor'
   }
 }, {
-  collection: 'feed_humidity'
+  collection: 'sensor-humidity'
 });
 
 const HumidityFeed = mongoose.model('HumidityFeed', humiditySchema);

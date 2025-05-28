@@ -23,7 +23,7 @@ router.use("/fan", fanRoutes);
 router.use("/hangclothe", hangClothRoutes);
 router.use("/config", userConfig);
 router.use("/voice", voiceRoutes);
-router.use("/images", imageRoutes)
+router.use("/images", imageRoutes);
 router.use("/camera", cameraRoutes);
 
 

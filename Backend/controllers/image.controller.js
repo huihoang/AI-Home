@@ -15,7 +15,7 @@ const getAllImages = async (req, res) => {
             })
         }
 
-        const { limit = 10, page = 1 } = req.query;
+        const { limit = 100, page = 1 } = req.query;
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
         const images = await Image.find().sort({ timestamp: -1 }).skip(skip).limit(parseInt(limit));

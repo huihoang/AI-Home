@@ -27,7 +27,7 @@ const cameraSchema = new mongoose.Schema({
     ref: 'Sensor'
   }
 }, {
-  collection: 'feed_camera' 
+  collection: 'sensor-camera' 
 });
 
 const CameraFeed = mongoose.model('CameraFeed', cameraSchema);

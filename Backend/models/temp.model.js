@@ -26,7 +26,7 @@ const tempSchema = new mongoose.Schema({
     ref: 'Sensor'
   }
 }, {
-  collection: 'feed_temp'
+  collection: 'sensor-temperature'
 });
 
 const TempFeed = mongoose.model('TempFeed', tempSchema);

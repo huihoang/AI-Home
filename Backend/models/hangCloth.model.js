@@ -1,13 +1,13 @@
 import mongoose from "mongoose";
 
-const brightSchema = new mongoose.Schema({
+const hangClotheSchema= new mongoose.Schema({
   feed_id: {
     type: String,
     required: true,
     unique: true
   },
   value: {
-    type: Number, 
+    type: String, 
   },
   created_epoch: {
     type: Number,
@@ -23,12 +23,12 @@ const brightSchema = new mongoose.Schema({
   },
   sensor_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Sensor'
+    ref: 'Device'
   }
 }, {
-  collection: 'sensor-light'
+  collection: 'button-hang-clothe'
 });
 
-const BrightFeed = mongoose.model('BrightFeed', brightSchema);
+const HangClotheFeed = mongoose.model('HangClotheFeed', hangClotheSchema);
 
-export default BrightFeed;
+export default HangClotheFeed;

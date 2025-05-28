@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const brightSchema = new mongoose.Schema({
+const fanSchema = new mongoose.Schema({
   feed_id: {
     type: String,
     required: true,
@@ -23,12 +23,12 @@ const brightSchema = new mongoose.Schema({
   },
   sensor_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Sensor'
+    ref: 'Device'
   }
 }, {
-  collection: 'sensor-light'
+  collection: 'button-fan'
 });
 
-const BrightFeed = mongoose.model('BrightFeed', brightSchema);
+const FanFeed = mongoose.model('FanFeed', fanSchema);
 
-export default BrightFeed;
+export default FanFeed;

@@ -15,6 +15,9 @@ const imageSchema = new mongoose.Schema({
   classification: {
     type: String,
     required: true
+  },
+  confidence_score: {
+    type: String,
   }
 }, { timestamps: true });
 

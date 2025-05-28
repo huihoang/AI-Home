@@ -26,7 +26,7 @@ const motionSchema = new mongoose.Schema({
     ref: 'Sensor'
   }
 }, {
-  collection: 'feed_motion'
+  collection: 'sensor-motion'
 });
 
 const MotionFeed = mongoose.model('MotionFeed', motionSchema);
