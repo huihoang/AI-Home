@@ -1,16 +1,11 @@
 import mongoose from "mongoose";
 
-const tempSchema = new mongoose.Schema({
+const fanSchema = new mongoose.Schema({
   feed_id: {
     type: String,
     required: true,
     unique: true
   },
-  user_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: "User"
-    },
   value: {
     type: Number, 
   },
@@ -28,12 +23,12 @@ const tempSchema = new mongoose.Schema({
   },
   sensor_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Sensor'
+    ref: 'Device'
   }
 }, {
-  collection: 'sensor-temperature'
+  collection: 'button-fan'
 });
 
-const TempFeed = mongoose.model('TempFeed', tempSchema);
+const FanFeed = mongoose.model('FanFeed', fanSchema);
 
-export default TempFeed;
+export default FanFeed;

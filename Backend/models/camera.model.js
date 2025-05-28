@@ -6,6 +6,11 @@ const cameraSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  user_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "User"
+    },
   value: {
     type: String, 
     required: true,
@@ -27,7 +32,7 @@ const cameraSchema = new mongoose.Schema({
     ref: 'Sensor'
   }
 }, {
-  collection: 'feed_camera' 
+  collection: 'sensor-camera' 
 });
 
 const CameraFeed = mongoose.model('CameraFeed', cameraSchema);

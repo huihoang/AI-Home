@@ -6,6 +6,11 @@ const motionSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  user_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "User"
+    },
   value: {
     type: String, 
   },
@@ -26,7 +31,7 @@ const motionSchema = new mongoose.Schema({
     ref: 'Sensor'
   }
 }, {
-  collection: 'feed_motion'
+  collection: 'sensor-motion'
 });
 
 const MotionFeed = mongoose.model('MotionFeed', motionSchema);

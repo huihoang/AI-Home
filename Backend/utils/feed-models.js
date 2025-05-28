@@ -1,29 +1,42 @@
 import BrightFeed from '../models/bright.model.js';
 import CameraFeed from '../models/camera.model.js';
 import HumidityFeed from '../models/humidity.model.js';
-import LedFeed from '../models/led.model.js';
 import MotionFeed from '../models/motion.model.js';
 import TempFeed from '../models/temp.model.js';
+import LedFeed from '../models/led.model.js';
+import DoorFeed from '../models/door.model.js';
+import FanFeed from '../models/fan.model.js';
+import HangClotheFeed from '../models/hangCloth.model.js';
+import VoiceFeed from '../models/voice.model.js';
 
 /**
- * Lấy mô hình feed dựa trên khóa feed
- * @param {string} feedKey - Khóa feed (bbc-bright, bbc-camera, v.v.)
- * @returns {mongoose.Model} - Model tương ứng
+ * 
+ * @param {string} feedKey 
+ * @returns {mongoose.Model} 
  */
 export const getFeedModel = (feedKey) => {
+  console.log(feedKey)
   switch (feedKey) {
-    case 'bbc-bright':
+    case 'sensor-light':
       return BrightFeed;
-    case 'bbc-camera':
+    case 'sensor-camera':
       return CameraFeed;
-    case 'bbc-humidity':
+    case 'sensor-humidity':
       return HumidityFeed;
-    case 'bbc-led':
-      return LedFeed;
-    case 'bbc-motion':
+    case 'sensor-motion':
       return MotionFeed;
-    case 'bbc-temp':
+    case 'sensor-temperature':
       return TempFeed;
+    case 'button-led':
+      return LedFeed;
+    case 'button-door':
+      return DoorFeed;
+    case 'button-fan':
+      return FanFeed;
+    case 'button-hang-clothe':
+      return HangClotheFeed;
+    case 'log-voice':
+      return VoiceFeed;
     default:
       throw new Error(`Invalid feed key: ${feedKey}`);
   }

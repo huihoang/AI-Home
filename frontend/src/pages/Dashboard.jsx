@@ -629,32 +629,7 @@ const [cameraImages, setCameraImages] = useState([]);
 
 
 
-  useEffect(() => {
-    if (ledStatus) {
-      const interval = setInterval(() => {
-        // 30% khả năng phát hiện người
-        if (Math.random() < 0.3) {
-          const confidence = Math.floor(Math.random() * 30) + 70; // 70-100%
-          const newDetection = {
-            timestamp: new Date(),
-            confidence,
-            image: `https://picsum.photos/200/300?random=${Math.floor(Math.random() * 1000)}`
-          };
-          setDetectionHistory(prev => [newDetection, ...prev.slice(0, 9)]);
-
-          // Thêm vào lịch sử hệ thống
-          const newEntry = {
-            timestamp: new Date(),
-            event: `Camera phát hiện người (${confidence}%)`,
-            type: 'camera'
-          };
-          setSystemHistory(prev => [newEntry, ...prev.slice(0, 99)]);
-        }
-      }, 10000); // Kiểm tra mỗi 10 giây
-
-      return () => clearInterval(interval);
-    }
-  }, [ledStatus]);
+  
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -727,6 +702,7 @@ const [cameraImages, setCameraImages] = useState([]);
         console.error('Error fetching sensor data:', error);
       }
     };
+    fetchData();
   }, [temperature, humidity, brightness]);
 
   // Calendar logic
@@ -3411,14 +3387,15 @@ const [currentPage, setCurrentPage] = useState(1);
 
   // Hàm định dạng thời gian chi tiết
   const formatDetailedTime = (timestamp) => {
-    try {
-      if (!timestamp) return 'N/A';
-      const date = new Date(timestamp);
-      return format(date, "HH:mm:ss dd/MM/yyyy");
-    } catch (e) {
-      return 'N/A';
-    }
-  };
+  try {
+    if (!timestamp) return 'N/A';
+    const date = new Date(timestamp);
+    return format(date, "HH:mm:ss dd/MM/yyyy"); // bạn có thể đổi thành "dd/MM/yyyy HH:mm:ss" nếu muốn ngày trước
+  } catch (e) {
+    return 'N/A';
+  }
+};
+
 
   return (
     <div style={{ 
@@ -3472,19 +3449,16 @@ const [currentPage, setCurrentPage] = useState(1);
                         </div>
                     ) : cameraImage && cameraImage.image ? (
                         <>
-                            <img 
-                                src={`data:image/jpeg;base64,${cameraImage.image}`}
-                                alt="Camera feed"
-                                style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    objectFit: 'cover'
-                                }}
-                                onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.src = ''; // Xóa src nếu có lỗi
-                                }}
-                            />
+                            <img
+  src={`data:image/jpeg;base64,${detection.image}`}
+  alt={`📅 ${formatDetailedTime(detection.createdAt)} - 👤 ${detection.confidence_score || 'N/A'}%`}
+  style={{
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover'
+  }}
+/>
+
                             <div style={{
                                 position: 'absolute',
                                 top: '15px',
@@ -3693,7 +3667,7 @@ const [currentPage, setCurrentPage] = useState(1);
                   {detection.image && (
                     <img
                       src={`data:image/jpeg;base64,${detection.image}`}
-                      alt={`Phát hiện ${formatDetailedTime(detection.timestamp)}`}
+                      alt={`Phát hiện ${formatDetailedTime(detection.createdAt)}`}
                       style={{
                         width: '100%',
                         height: '100%',
@@ -3711,28 +3685,20 @@ const [currentPage, setCurrentPage] = useState(1);
                     padding: '8px',
                     fontSize: '12px'
                   }}>
-                    <div style={{ 
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}>
-                      <span>🕒 {formatDetailedTime(detection.timestamp)}</span>
-                    </div>
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginTop: '5px'
-                    }}>
-                      <span>👤 {detection.confidence || 'N/A'}%</span>
-                      <span style={{
-                        backgroundColor: detection.classification === 'Have person' ? '#e74c3c' : '#2ecc71',
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        fontSize: '10px'
-                      }}>
-                        {detection.classification === 'Have person' ? 'CÓ NGƯỜI' : 'AN TOÀN'}
-                      </span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+  <span>📅 {formatDetailedTime(detection.createdAt)}</span>
+</div>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '5px' }}>
+  <span>👤 {detection.confidence_score || 'N/A'}%</span>
+  <span style={{
+    backgroundColor: detection.classification === 'Have person' ? '#e74c3c' : '#2ecc71',
+    padding: '2px 6px',
+    borderRadius: '4px',
+    fontSize: '10px'
+  }}>
+    {detection.classification === 'Have person' ? 'CÓ NGƯỜI' : 'KHÔNG CÓ NGƯỜI'}
+  </span>
+
                     </div>
                   </div>
                 </div>

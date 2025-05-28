@@ -6,6 +6,11 @@ const humiditySchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  user_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "User"
+    },
   value: {
     type: Number, 
   },
@@ -26,7 +31,7 @@ const humiditySchema = new mongoose.Schema({
     ref: 'Sensor'
   }
 }, {
-  collection: 'feed_humidity'
+  collection: 'sensor-humidity'
 });
 
 const HumidityFeed = mongoose.model('HumidityFeed', humiditySchema);

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const tempSchema = new mongoose.Schema({
+const voiceSchema = new mongoose.Schema({
   feed_id: {
     type: String,
     required: true,
@@ -12,7 +12,7 @@ const tempSchema = new mongoose.Schema({
       ref: "User"
     },
   value: {
-    type: Number, 
+    type: String, 
   },
   created_epoch: {
     type: Number,
@@ -28,12 +28,12 @@ const tempSchema = new mongoose.Schema({
   },
   sensor_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Sensor'
+    ref: 'Device'
   }
 }, {
-  collection: 'sensor-temperature'
+  collection: 'log-voice'
 });
 
-const TempFeed = mongoose.model('TempFeed', tempSchema);
+const VoiceFeed = mongoose.model('VoiceFeed', voiceSchema);
 
-export default TempFeed;
+export default VoiceFeed;
