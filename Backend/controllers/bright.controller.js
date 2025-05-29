@@ -53,9 +53,7 @@ const checkBright = async () => {
 
   for (const userConfig of userConfigs) {
     const userId = userConfig.user_id;
-    // const { high, low } = userConfig.thresholds.brightness;
-    const high = 31;
-    const low = 30;
+    const { high, low } = userConfig.thresholds.brightness;
     const now = new Date();
     let msg = "";
     let isOverThreshold = false;
