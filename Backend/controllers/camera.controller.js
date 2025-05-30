@@ -7,7 +7,7 @@ const updateCameraStatus = async (req, res) => {
 
     await new Promise((resolve, reject) => {
       mqttClient.client.publish(
-        `${process.env.ADAFRUIT_USERNAME}/feeds/bbc-camera`, // feed camera trên Adafruit
+        `${process.env.ADAFRUIT_USERNAME}/feeds/sensor-camera`, // feed camera trên Adafruit
         status,
         (err) => {
           if (err) return reject(err);

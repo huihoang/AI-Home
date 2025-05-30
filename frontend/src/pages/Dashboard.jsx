@@ -1072,7 +1072,7 @@ const response = await axios.post('http://localhost:8080/voice/update-status', {
                 setCommandFeedback({
                   command: 'auto',
                   result: 'Cửa đã tự động đóng',
-                  timestamp: new Date()
+                  timestamp: new Date() 
                 });
               }, 5000);
             }
