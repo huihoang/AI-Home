@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 import Sensor from "../models/sensors.model.js";
 import { getFeedModel } from "../utils/feed-models.js";
 
-const ADAFRUIT_USERNAME = 'hoangbk4';
-const BASE_URL = 'https://io.adafruit.com/api/v2';
+const ADAFRUIT_USERNAME = process.env.ADAFRUIT_USERNAME;
+const BASE_URL = process.env.SERVER_URL;
 
 const FEEDS = [
   'sensor-light', 

@@ -7,6 +7,8 @@ import { useMemo } from 'react';
 import { useCallback } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
+import { io } from "socket.io-client";
+import { isValid } from 'date-fns';
 Chart.register(...registerables);
 import mqtt from 'mqtt';
 const API_URL_TEMP = "https://io.adafruit.com/api/v2/hoangbk4/feeds/sensor-temperature/data";
@@ -68,6 +70,11 @@ const Dashboard = () => {
   const timeRef = useRef(new Date());
   const [displayTime, setDisplayTime] = useState(format(new Date(), 'HH:mm:ss'));
   const [activeSlide, setActiveSlide] = useState(currentSlide);
+  const [thresholds, setThresholds] = useState({
+    temperature: { min: temperature, max: temperature },
+    humidity: { min: humidity, max: humidity },
+    brightness: { min: brightness, max: brightness }
+  });
 const checkThresholds = (value, type) => {
   if (value === null) return null;
   
@@ -91,11 +98,8 @@ const checkThresholds = (value, type) => {
   }
   return null;
 };
-  const [thresholds, setThresholds] = useState({
-    temperature: { min: 20, max: 30 },
-    humidity: { min: 40, max: 70 },
-    brightness: { min: 30, max: 80 }
-  });
+
+  
   const [chartData, setChartData] = useState({
     labels: [],
     datasets: [
@@ -229,6 +233,24 @@ useEffect(() => {
       },
     });
 
+    // Kiểm tra các giá trị hiện tại với ngưỡng mới
+    const newNotifications = [];
+    
+    if (temperature !== null) {
+      const tempNotification = checkThresholds(temperature, 'temperature');
+      if (tempNotification) newNotifications.push(tempNotification);
+    }
+    
+    if (humidity !== null) {
+      const humidNotification = checkThresholds(humidity, 'humidity');
+      if (humidNotification) newNotifications.push(humidNotification);
+    }
+    
+    if (brightness !== null) {
+      const brightNotification = checkThresholds(brightness, 'brightness');
+      if (brightNotification) newNotifications.push(brightNotification);
+    }
+
     // Thêm thông báo sau khi lưu thành công
     const successNotification = {
       message: `Đã lưu ngưỡng mới: 
@@ -239,7 +261,8 @@ useEffect(() => {
       type: 'settings',
       read: false
     };
-    setNotifications(prev => [successNotification, ...prev.slice(0, 19)]);
+    
+    setNotifications(prev => [successNotification, ...newNotifications, ...prev.slice(0, 19 - newNotifications.length)]);
 
     setCommandFeedback({
       command: 'settings',
@@ -265,77 +288,44 @@ setTimeout(() => {
     const userId = currentUser?._id;
     if (!userId) return;
 
-    const [tempRes, humidRes, brightRes] = await Promise.all([
-      axios.get(`http://localhost:8080/sensors/temperature/status?user_id=${userId}`),
-      axios.get(`http://localhost:8080/sensors/humidity/status?user_id=${userId}`),
-      axios.get(`http://localhost:8080/sensors/bright/status?user_id=${userId}`)
-    ]);
+    // Remove these failing HTTP requests or implement the endpoints
+    // const [tempRes, humidRes, brightRes] = await Promise.all([
+    //   axios.get(`http://localhost:8080/sensors/temperature/status?user_id=${userId}`),
+    //   axios.get(`http://localhost:8080/sensors/humidity/status?user_id=${userId}`),
+    //   axios.get(`http://localhost:8080/sensors/bright/status?user_id=${userId}`)
+    // ]);
 
+    // Instead, rely on WebSocket for real-time updates
+    // Or if you need HTTP fallback, implement proper endpoints
+    
+    // Example of checking thresholds directly from state:
     const newNotifications = [];
-
-    // Xử lý nhiệt độ
-    if (tempRes.data.isOverThreshold) {
-      console.log(tempRes.data)
-      const status = tempRes.data.currentValue > thresholds.temperature.max ? "CAO" : "THẤP";
-      const threshold = tempRes.data.currentValue > thresholds.temperature.max 
-        ? thresholds.temperature.max 
-        : thresholds.temperature.min;
-      
-      newNotifications.push({
-        message: `Nhiệt độ ${status}: ${tempRes.data.currentValue}°C (Ngưỡng: ${threshold}°C)`,
-        timestamp: new Date(),
-        type: 'temperature',
-        read: false,
-        severity: 'high'
-      });
+    
+    if (temperature !== null) {
+      // const tempNotification = checkThresholds(temperature, 'temperature');
+      if (tempNotification) newNotifications.push(tempNotification);
     }
-
-    // Xử lý độ ẩm
-    if (humidRes.data.isOverThreshold) {
-      const status = humidRes.data.currentValue > thresholds.humidity.max ? "CAO" : "THẤP";
-      const threshold = humidRes.data.currentValue > thresholds.humidity.max 
-        ? thresholds.humidity.max 
-        : thresholds.humidity.min;
-      
-      newNotifications.push({
-        message: `Độ ẩm ${status}: ${humidRes.data.currentValue}% (Ngưỡng: ${threshold}%)`,
-        timestamp: new Date(),
-        type: 'humidity',
-        read: false,
-        severity: 'medium'
-      });
+    
+    if (humidity !== null) {
+      // const humidNotification = checkThresholds(humidity, 'humidity');
+      if (humidNotification) newNotifications.push(humidNotification);
     }
-
-    // Xử lý ánh sáng
-    if (brightRes.data.isOverThreshold) {
-      const status = brightRes.data.currentValue > thresholds.brightness.max ? "CAO" : "THẤP";
-      const threshold = brightRes.data.currentValue > thresholds.brightness.max 
-        ? thresholds.brightness.max 
-        : thresholds.brightness.min;
-      
-      newNotifications.push({
-        message: `Ánh sáng ${status}: ${brightRes.data.currentValue}% (Ngưỡng: ${threshold}%)`,
-        timestamp: new Date(),
-        type: 'brightness',
-        read: false,
-        severity: 'low'
-      });
+    
+    if (brightness !== null) {
+      // const brightNotification = checkThresholds(brightness, 'brightness');
+      if (brightNotification) newNotifications.push(brightNotification);
     }
 
     if (newNotifications.length > 0) {
       setNotifications(prev => [...newNotifications, ...prev.slice(0, 19 - newNotifications.length)]);
     }
   } catch (err) {
-    console.error("Lỗi khi lấy cảnh báo từ API:", err);
+    console.error("Lỗi khi lấy cảnh báo:", err);
   }
-}, [thresholds]);
+}, [temperature, humidity, brightness, thresholds]);
 
 
-  useEffect(() => {
-  fetchSensorWarnings();
-  const interval = setInterval(fetchSensorWarnings, 10000);
-  return () => clearInterval(interval);
-}, [fetchSensorWarnings]);
+
 
   useEffect(() => {
     setActiveSlide(currentSlide);
@@ -504,22 +494,7 @@ setTimeout(() => {
       });
     }
   }, [doorStatus]);
-  // Temperature
-  useEffect(() => {
-  // Kiểm tra lại các giá trị hiện tại khi ngưỡng thay đổi
-  if (temperature !== null) {
-    const tempNotification = checkThresholds(temperature, 'temperature');
-    if (tempNotification) setNotifications(prev => [tempNotification, ...prev.slice(0, 19)]);
-  }
-  if (humidity !== null) {
-    const humidNotification = checkThresholds(humidity, 'humidity');
-    if (humidNotification) setNotifications(prev => [humidNotification, ...prev.slice(0, 19)]);
-  }
-  if (brightness !== null) {
-    const brightNotification = checkThresholds(brightness, 'brightness');
-    if (brightNotification) setNotifications(prev => [brightNotification, ...prev.slice(0, 19)]);
-  }
-}, [thresholds]);
+  
 useEffect(() => {
   if (temperature !== null) {
     const newEntry = {
@@ -631,89 +606,150 @@ const [cameraImages, setCameraImages] = useState([]);
 
 
   
-  useEffect(() => {
   const fetchData = async () => {
-    try {
-      const [tempRes, humidityRes, brightnessRes] = await Promise.all([
-        axios.get(API_URL_TEMP),
-        axios.get(API_URL_HUMIDITY),
-        axios.get(API_URL_BRIGHTNESS)
-      ]);
+  try {
+    const [tempRes, humidityRes, brightnessRes] = await Promise.all([
+      axios.get(API_URL_TEMP),
+      axios.get(API_URL_HUMIDITY),
+      axios.get(API_URL_BRIGHTNESS)
+    ]);
 
-      const now = new Date();
+    const now = new Date();
 
-      const nextSensorDataHistory = {
-        temperature: [...sensorDataHistory.temperature],
-        humidity: [...sensorDataHistory.humidity],
-        brightness: [...sensorDataHistory.brightness]
-      };
+    // Tạo bản sao lịch sử cảm biến
+    const nextSensorDataHistory = {
+      temperature: [...sensorDataHistory.temperature],
+      humidity: [...sensorDataHistory.humidity],
+      brightness: [...sensorDataHistory.brightness]
+    };
 
-      if (tempRes.data.length > 0) {
-        const latestTemperature = parseFloat(tempRes.data[0].value);
-        if (latestTemperature !== temperature) {
-          setTemperature(latestTemperature);
-          nextSensorDataHistory.temperature = [
-            ...nextSensorDataHistory.temperature.slice(-11),
-            { value: latestTemperature, time: now }
-          ];
-        }
+    // 👉 Cập nhật nhiệt độ
+    if (tempRes.data.length > 0) {
+      const latestTemperature = parseFloat(tempRes.data[0].value);
+      if (!isNaN(latestTemperature)) {
+        setTemperature(latestTemperature);
+        nextSensorDataHistory.temperature = [
+          ...nextSensorDataHistory.temperature.slice(-11),
+          { value: latestTemperature, time: now }
+        ];
       }
-
-      if (humidityRes.data.length > 0) {
-        const latestHumidity = parseFloat(humidityRes.data[0].value);
-        if (latestHumidity !== humidity) {
-          setHumidity(latestHumidity);
-          nextSensorDataHistory.humidity = [
-            ...nextSensorDataHistory.humidity.slice(-11),
-            { value: latestHumidity, time: now }
-          ];
-        }
-      }
-
-      if (brightnessRes.data.length > 0) {
-        const latestBrightness = parseFloat(brightnessRes.data[0].value);
-        if (latestBrightness !== brightness) {
-          setBrightness(latestBrightness);
-          nextSensorDataHistory.brightness = [
-            ...nextSensorDataHistory.brightness.slice(-11),
-            { value: latestBrightness, time: now }
-          ];
-        }
-      }
-
-      setSensorDataHistory(nextSensorDataHistory);
-
-      const timeLabels = nextSensorDataHistory.temperature
-        .filter(item => item.time && isValid(new Date(item.time)))
-        .map(item => format(new Date(item.time), 'HH:mm:ss'));
-
-
-      setChartData(prev => ({
-        labels: timeLabels,
-        datasets: [
-          {
-            ...prev.datasets[0],
-            data: nextSensorDataHistory.temperature.map(item => item.value)
-          },
-          {
-            ...prev.datasets[1],
-            data: nextSensorDataHistory.humidity.map(item => item.value)
-          },
-          {
-            ...prev.datasets[2],
-            data: nextSensorDataHistory.brightness.map(item => item.value)
-          }
-        ]
-      }));
-
-    } catch (error) {
-      console.error('Lỗi khi lấy dữ liệu cảm biến:', error);
     }
+
+    // 👉 Cập nhật độ ẩm
+    if (humidityRes.data.length > 0) {
+      const latestHumidity = parseFloat(humidityRes.data[0].value);
+      if (!isNaN(latestHumidity)) {
+        setHumidity(latestHumidity);
+        nextSensorDataHistory.humidity = [
+          ...nextSensorDataHistory.humidity.slice(-11),
+          { value: latestHumidity, time: now }
+        ];
+      }
+    }
+
+    // 👉 Cập nhật ánh sáng
+    if (brightnessRes.data.length > 0) {
+      const latestBrightness = parseFloat(brightnessRes.data[0].value);
+      if (!isNaN(latestBrightness)) {
+        setBrightness(latestBrightness);
+        nextSensorDataHistory.brightness = [
+          ...nextSensorDataHistory.brightness.slice(-11),
+          { value: latestBrightness, time: now }
+        ];
+      }
+    }
+
+    // 👉 Cập nhật lại state lịch sử
+    setSensorDataHistory(nextSensorDataHistory);
+
+    // 👉 Tạo nhãn thời gian an toàn
+    const timeLabels = nextSensorDataHistory.temperature
+      .filter(item => item.time && isValid(new Date(item.time)))
+      .map(item => format(new Date(item.time), 'HH:mm:ss'));
+
+    // 👉 Cập nhật dữ liệu biểu đồ
+    setChartData(prev => ({
+      labels: timeLabels,
+      datasets: [
+        {
+          ...prev.datasets[0],
+          data: nextSensorDataHistory.temperature.map(item => item.value)
+        },
+        {
+          ...prev.datasets[1],
+          data: nextSensorDataHistory.humidity.map(item => item.value)
+        },
+        {
+          ...prev.datasets[2],
+          data: nextSensorDataHistory.brightness.map(item => item.value)
+        }
+      ]
+    }));
+
+    console.log("✅ fetchData thành công:", nextSensorDataHistory);
+
+  } catch (error) {
+    console.error('❌ Lỗi khi lấy dữ liệu cảm biến:', error);
+  }
+};
+
+useEffect(() => {
+  const token = localStorage.getItem("token");
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  const socket = io("http://localhost:8080", {
+    auth: { token },
+    reconnection: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000,
+  });
+
+  if (currentUser?._id) {
+    socket.emit("join-room", currentUser._id);
+  }
+
+  socket.on("connect", () => {
+    console.log("Connected to WebSocket server");
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Disconnected from WebSocket server");
+  });
+
+  socket.on("sensor-update", (data) => {
+  console.log("Received sensor update:", data);
+
+  // Cập nhật dữ liệu cảm biến tương ứng
+  switch (data.sensorType) {
+    case 'temperature':
+      setTemperature(data.value);
+      break;
+    case 'humidity':
+      setHumidity(data.value);
+      break;
+    case 'brightness':
+      setBrightness(data.value);
+      break;
+    default:
+      break;
+  }
+
+  // Tạo thông báo nếu vượt ngưỡng
+  const notification = {
+    message: data.msg,
+    timestamp: new Date(),
+    type: data.sensorType,
+    read: false,
+    severity: data.isOverThreshold ? 'high' : 'low'
   };
+  setNotifications(prev => [notification, ...prev.slice(0, 19)]);
+});
 
-  fetchData(); // Gọi khi mount lần đầu
+  return () => {
+    socket.off("sensor-update");
+    socket.disconnect();
+  };
+}, []);
 
-}, [temperature, humidity, brightness]);
 
   // Calendar logic
   // Load ghi chú từ localStorage khi khởi động

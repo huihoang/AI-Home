@@ -1,66 +1,127 @@
-import axios from "axios";
-import UserConfig from "../models/userConfig.model.js";
-import Notification from "../models/notification.model.js";
+  import axios from "axios";
+  import UserConfig from "../models/userConfig.model.js";
+  import Notification from "../models/notification.model.js";
+  import { getIO } from "../middleware/socket.js";
+  import adafruitService from "../utils/adafruitService.js";
 
-const checkTemperature = async (req, res) => {
-  let isOverThreshold = false;
-  let msg = "";
+  let lastAlertTime = {};
+  let currentState = {};
 
-  try {
-    const userId = req.query.user_id;
-    if (!userId) {
-      return res.status(400).json({ message: "Thiếu user_id trong request." });
+const sendNotification = async (userId, msg, lv) => {
+  const notification = new Notification({
+    user_id: userId,
+    message: msg,
+    status: "unread",
+    alertLevel: lv,
+  });
+  await notification.save();
+  console.log(`Đã gửi thông báo cho user ${userId}: ${msg}`);
+};
+
+  const fetchLatestSensorData = async (feed) => {
+    try {
+      const response = await axios.get(
+        `https://io.adafruit.com/api/v2/${process.env.ADAFRUIT_USERNAME}/feeds/${feed}/data`
+      );
+      console.log(response.data[0].value);
+      return parseFloat(response.data[0].value);
+    } catch (error) {
+      console.error(
+        `Lỗi khi lấy dữ liệu từ Adafruit IO (${feed}):`,
+        error.message
+      );
+      return null;
+    }
+  };
+
+  const checkTemperature = async () => {
+    const io = getIO();
+    const value = await fetchLatestSensorData("sensor-temperature");
+    if (value === null) return;
+
+    const rooms = io.sockets.adapter.rooms;
+    const onlineUsers = [];
+    for (const [room, clients] of rooms) {
+      if (room.startsWith("user-")) {
+        const userId = room.split("user-")[1];
+        onlineUsers.push(userId);
+      }
     }
 
-    const response = await axios.get(
-      "https://io.adafruit.com/api/v2/hoangbk4/feeds/sensor-temperature/data"
-    );
-    const latestData = response.data[0];
-    const temperature = parseFloat(latestData.value);
+    const userConfigs = await UserConfig.find({
+      user_id: { $in: onlineUsers },
+    });
 
-    // Lấy ngưỡng nhiệt độ từ database
-    const userConfig = await UserConfig.findOne({ user_id: userId });
-    if (!userConfig) {
-      return res
-        .status(404)
-        .json({ message: "Không tìm thấy cấu hình người dùng." });
-    }
+    for (const userConfig of userConfigs) {
+      const userId = userConfig.user_id;
+      const { high, low } = userConfig.thresholds.temperature;
+      const now = new Date();
 
-    const { high, low } = userConfig.thresholds.temperature;
+      let msg = "";
+      let isOverThreshold = false;
 
-    if (temperature > high) {
-      console.log("Nhiệt độ vượt ngưỡng!");
+      if (!currentState[userId]) currentState[userId] = "NORMAL";
+
+    if (value > high) {
       isOverThreshold = true;
-      msg = `Nhiệt độ vượt ngưỡng (${temperature}°C so với ngưỡng đã cấu hình ${high}°C)!`;
-
-      // Lưu thông báo vào database
-      // const notification = new Notification({
-      //   user_id: userConfig.user_id,
-      //   message: msg,
-      //   status: "unread",
-      // });
-      // await notification.save();
-    } else if (temperature < low) {
-      console.log("Nhiệt độ dưới ngưỡng!");
+      msg = `Nhiệt độ cao: ${value}°C (Ngưỡng: ${high}°C)!`;
+      if (currentState[userId] !== "HIGH") {
+        currentState[userId] = "HIGH";
+        lastAlertTime[userId] = now;
+        await sendNotification(userId, msg, "CAO");
+        io.to(`user-${userId}`).emit("sensor-update", {
+          sensorType: "temperature",
+          value,
+          msg,
+          isOverThreshold,
+        });
+      } else if (lastAlertTime[userId] && now - lastAlertTime[userId] >= 3000) {
+        lastAlertTime[userId] = now;
+        await sendNotification(userId, msg, "CAO");
+        io.to(`user-${userId}`).emit("sensor-update", {
+          sensorType: "temperature",
+          value,
+          msg,
+          isOverThreshold,
+        });
+      }
+    } else if (value < low) {
       isOverThreshold = true;
-      msg = `Nhiệt độ dưới ngưỡng (${temperature}°C so với ngưỡng đã cấu hình ${low}°C)!`;
-
-      // Lưu thông báo vào database
-      // const notification = new Notification({
-      //   user_id: userConfig.user_id,
-      //   message: msg,
-      //   status: "unread",
-      // });
-      // await notification.save();
+      msg = `Nhiệt độ thấp: ${value}°C (Ngưỡng: ${low}°C)!`;
+      if (currentState[userId] !== "LOW") {
+        currentState[userId] = "LOW";
+        lastAlertTime[userId] = now;
+        await sendNotification(userId, msg, "THẤP");
+        io.to(`user-${userId}`).emit("sensor-update", {
+          sensorType: "temperature",
+          value,
+          msg,
+          isOverThreshold,
+        });
+      } else if (lastAlertTime[userId] && now - lastAlertTime[userId] >= 3000) {
+        lastAlertTime[userId] = now;
+        await sendNotification(userId, msg, "THẤP");
+        io.to(`user-${userId}`).emit("sensor-update", {
+          sensorType: "temperature",
+          value,
+          msg,
+        });
+      }
     } else {
-      console.log("Nhiệt độ ở ngưỡng an toàn.");
+      if (currentState[userId] !== "NORMAL") {
+        msg = `Nhiệt độ ổn định: ${value}°C.`;
+        currentState[userId] = "NORMAL";
+        lastAlertTime[userId] = null;
+        // await sendNotification(userId, msg);
+        // io.to(`user-${userId}`).emit("sensor-update", {
+        //   sensorType: "temperature",
+        //   value,
+        //   msg,
+        //   isOverThreshold,
+        // });
+      }
     }
-
-    res.json({ isOverThreshold, msg });
-  } catch (error) {
-    console.error("Lỗi khi lấy dữ liệu từ Adafruit IO:", error);
-    res.status(500).json({ message: "Không thể lấy trạng thái nhiệt độ." });
   }
 };
 
-export default { checkTemperature };
+  export default { checkTemperature };

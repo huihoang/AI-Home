@@ -7,9 +7,8 @@ import { initializeSocket } from "./middleware/socket.js";
 dotenv.config();
 import connectDB from "./config/db.js";
 import router from "./routes/routes.js";
-import voiceRoutes from './routes/voice.routes.js';
-
-
+import voiceRoutes from "./routes/voice.routes.js";
+import handleSensor from "./utils/handleSensor.js";
 const app = express();
 const server = http.createServer(app);
 const io = initializeSocket(server);
@@ -24,8 +23,9 @@ app.use((req, res, next) => {
   next();
 });
 
+handleSensor.initSensorHandling();
 const PORT = process.env.PORT || 8080;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
