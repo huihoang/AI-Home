@@ -63,7 +63,7 @@ const Dashboard = () => {
     brightness: []
   });
   const [cameraStatus, setCameraStatus] = useState(initialState?.cameraStatus || false);
-  const [notifications, setNotifications] = useState([]);
+const [notifications, setNotifications] = useState(initialState?.notifications || []);
   const [transcript, setTranscript] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [commandFeedback, setCommandFeedback] = useState(null);
@@ -166,7 +166,8 @@ const checkThresholds = (value, type) => {
     systemHistory,
     detectionHistory,
     sensorDataHistory,
-    cameraStatus
+    cameraStatus,
+    notifications
   }), [
     ledStatus, currentDate, fanStatus, fanSpeed, darkMode, temperature,
     humidity, brightness, currentSlide, doorStatus, fanLevel, notes,
@@ -692,6 +693,15 @@ const [cameraImages, setCameraImages] = useState([]);
     console.error('❌ Lỗi khi lấy dữ liệu cảm biến:', error);
   }
 };
+useEffect(() => {
+  fetchData(); // gọi lần đầu
+
+  const interval = setInterval(() => {
+    fetchData();
+  }, 10000); // mỗi 10s
+
+  return () => clearInterval(interval);
+}, []);
 
 useEffect(() => {
   const token = localStorage.getItem("token");
