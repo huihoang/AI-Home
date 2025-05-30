@@ -4,9 +4,6 @@
   import { getIO } from "../middleware/socket.js";
   import adafruitService from "../utils/adafruitService.js";
 
-  let lastAlertTime = {};
-  let currentState = {};
-
 const sendNotification = async (userId, msg, lv) => {
   const notification = new Notification({
     user_id: userId,
@@ -14,7 +11,7 @@ const sendNotification = async (userId, msg, lv) => {
     status: "unread",
     alertLevel: lv,
   });
-  await notification.save();
+  // await notification.save();
   console.log(`Đã gửi thông báo cho user ${userId}: ${msg}`);
 };
 
@@ -39,6 +36,7 @@ const sendNotification = async (userId, msg, lv) => {
     const value = await fetchLatestSensorData("sensor-temperature");
     if (value === null) return;
 
+<<<<<<< HEAD
     const rooms = io.sockets.adapter.rooms;
     const onlineUsers = [];
     for (const [room, clients] of rooms) {
@@ -47,11 +45,17 @@ const sendNotification = async (userId, msg, lv) => {
         onlineUsers.push(userId);
       }
     }
+=======
+  for (const userConfig of userConfigs) {
+    const userId = userConfig.user_id;
+    const { high, low } = userConfig.thresholds.temperature;
+>>>>>>> BE_SERVER
 
     const userConfigs = await UserConfig.find({
       user_id: { $in: onlineUsers },
     });
 
+<<<<<<< HEAD
     for (const userConfig of userConfigs) {
       const userId = userConfig.user_id;
       const { high, low } = userConfig.thresholds.temperature;
@@ -62,64 +66,30 @@ const sendNotification = async (userId, msg, lv) => {
 
       if (!currentState[userId]) currentState[userId] = "NORMAL";
 
+=======
+>>>>>>> BE_SERVER
     if (value > high) {
       isOverThreshold = true;
       msg = `Nhiệt độ cao: ${value}°C (Ngưỡng: ${high}°C)!`;
-      if (currentState[userId] !== "HIGH") {
-        currentState[userId] = "HIGH";
-        lastAlertTime[userId] = now;
-        await sendNotification(userId, msg, "CAO");
-        io.to(`user-${userId}`).emit("sensor-update", {
-          sensorType: "temperature",
-          value,
-          msg,
-          isOverThreshold,
-        });
-      } else if (lastAlertTime[userId] && now - lastAlertTime[userId] >= 3000) {
-        lastAlertTime[userId] = now;
-        await sendNotification(userId, msg, "CAO");
-        io.to(`user-${userId}`).emit("sensor-update", {
-          sensorType: "temperature",
-          value,
-          msg,
-          isOverThreshold,
-        });
-      }
+      await sendNotification(userId, msg, "CAO");
+      io.to(`user-${userId}`).emit("sensor-update", {
+        sensorType: "temperature",
+        value,
+        msg,
+        isOverThreshold,
+      });
     } else if (value < low) {
       isOverThreshold = true;
       msg = `Nhiệt độ thấp: ${value}°C (Ngưỡng: ${low}°C)!`;
-      if (currentState[userId] !== "LOW") {
-        currentState[userId] = "LOW";
-        lastAlertTime[userId] = now;
-        await sendNotification(userId, msg, "THẤP");
-        io.to(`user-${userId}`).emit("sensor-update", {
-          sensorType: "temperature",
-          value,
-          msg,
-          isOverThreshold,
-        });
-      } else if (lastAlertTime[userId] && now - lastAlertTime[userId] >= 3000) {
-        lastAlertTime[userId] = now;
-        await sendNotification(userId, msg, "THẤP");
-        io.to(`user-${userId}`).emit("sensor-update", {
-          sensorType: "temperature",
-          value,
-          msg,
-        });
-      }
+      await sendNotification(userId, msg, "THẤP");
+      io.to(`user-${userId}`).emit("sensor-update", {
+        sensorType: "temperature",
+        value,
+        msg,
+        isOverThreshold,
+      });
     } else {
-      if (currentState[userId] !== "NORMAL") {
-        msg = `Nhiệt độ ổn định: ${value}°C.`;
-        currentState[userId] = "NORMAL";
-        lastAlertTime[userId] = null;
-        // await sendNotification(userId, msg);
-        // io.to(`user-${userId}`).emit("sensor-update", {
-        //   sensorType: "temperature",
-        //   value,
-        //   msg,
-        //   isOverThreshold,
-        // });
-      }
+      msg = `Nhiệt độ ổn định: ${value}°C.`;
     }
   }
 };

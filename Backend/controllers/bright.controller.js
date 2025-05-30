@@ -4,9 +4,6 @@ import Notification from "../models/notification.model.js";
 import { getIO } from "../middleware/socket.js";
 import adafruitService from "../utils/adafruitService.js";
 
-let lastAlertTime = {};
-let currentState = {};
-
 const sendNotification = async (userId, msg, lv) => {
   const notification = new Notification({
     user_id: userId,
@@ -14,8 +11,7 @@ const sendNotification = async (userId, msg, lv) => {
     status: "unread",
     alertLevel: lv,
   });
-  await notification.save();
-  await notification.save();
+  // await notification.save();
   console.log(`Đã gửi thông báo cho user ${userId}: ${msg}`);
 };
 
@@ -56,15 +52,13 @@ const checkBright = async () => {
   for (const userConfig of userConfigs) {
     const userId = userConfig.user_id;
     const { high, low } = userConfig.thresholds.brightness;
-    const now = new Date();
     let msg = "";
     let isOverThreshold = false;
-
-    if (!currentState[userId]) currentState[userId] = "NORMAL";
 
     if (value > high) {
       isOverThreshold = true;
       msg = `Độ sáng cao: ${value}% (Ngưỡng: ${high}%)!`;
+<<<<<<< HEAD
       if (currentState[userId] !== "HIGH") {
         currentState[userId] = "HIGH";
         lastAlertTime[userId] = now;
@@ -87,42 +81,27 @@ const checkBright = async () => {
           isOverThreshold,
         });
       }
+=======
+      await sendNotification(userId, msg, "CAO");
+      io.to(`user-${userId}`).emit("sensor-update", {
+        sensorType: "brightness",
+        value,
+        msg,
+        isOverThreshold,
+      });
+>>>>>>> BE_SERVER
     } else if (value < low) {
       isOverThreshold = true;
       msg = `Độ sáng thấp: ${value}% (Ngưỡng: ${low}%)!`;
-      if (currentState[userId] !== "LOW") {
-        currentState[userId] = "LOW";
-        lastAlertTime[userId] = now;
-        await sendNotification(userId, msg, "THẤP");
-        io.to(`user-${userId}`).emit("sensor-update", {
-          sensorType: "brightness",
-          value,
-          msg,
-          isOverThreshold,
-        });
-      } else if (lastAlertTime[userId] && now - lastAlertTime[userId] >= 3000) {
-        lastAlertTime[userId] = now;
-        await sendNotification(userId, msg, "THẤP");
-        io.to(`user-${userId}`).emit("sensor-update", {
-          sensorType: "brightness",
-          value,
-          msg,
-          isOverThreshold,
-        });
-      }
+      await sendNotification(userId, msg, "THẤP");
+      io.to(`user-${userId}`).emit("sensor-update", {
+        sensorType: "brightness",
+        value,
+        msg,
+        isOverThreshold,
+      });
     } else {
-      if (currentState[userId] !== "NORMAL") {
-        msg = `Độ sáng ổn định: ${value}%.`;
-        currentState[userId] = "NORMAL";
-        lastAlertTime[userId] = null;
-        // await sendNotification(userId, msg);
-        // io.to(`user-${userId}`).emit("sensor-update", {
-        //   sensorType: "brightness",
-        //   value,
-        //   msg,
-        //   isOverThreshold,
-        // });
-      }
+      msg = `Độ sáng ổn định: ${value}%.`;
     }
   }
 };

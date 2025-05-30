@@ -14,8 +14,7 @@ const sendNotification = async (userId, msg, alertLevel) => {
     status: "unread",
     alertLevel: alertLevel,
   });
-  await notification.save();
-  await notification.save();
+  // await notification.save();
   console.log(`Đã gửi thông báo cho user ${userId}: ${msg}`);
 };
 
@@ -69,9 +68,10 @@ const checkHumidity = async () => {
       console.error("Lỗi khi lấy trạng thái button-hang-clothe:", error);
     }
 
-    if (value > high && hangClotheStatus === "ON") {
+    if (value > high) {
       isOverThreshold = true;
       msg = `Độ ẩm vượt ngưỡng (${value}% so với ${high}%)!`;
+<<<<<<< HEAD
       if (!currentState[userId] || currentState[userId] !== "HIGH") {
         currentState[userId] = "HIGH";
         await sendNotification(userId, msg);
@@ -82,6 +82,18 @@ const checkHumidity = async () => {
           msg,
           isOverThreshold,
         });
+=======
+      //if (!currentState[userId] || currentState[userId] !== "HIGH") {
+      currentState[userId] = "HIGH";
+      await sendNotification(userId, msg, "CAO");
+      io.to(`user-${userId}`).emit("sensor-update", {
+        sensorType: "humidity",
+        value,
+        msg,
+        isOverThreshold,
+      });
+      if (hangClotheStatus === "ON") {
+>>>>>>> BE_SERVER
         adafruitService.client.publish(
           `${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe`,
           "OFF",
@@ -94,18 +106,20 @@ const checkHumidity = async () => {
           }
         );
       }
-    } else if (value < low && hangClotheStatus === "ON") {
+      //}
+    } else if (value < low) {
       isOverThreshold = true;
       msg = `Độ ẩm dưới ngưỡng (${value}% so với ${low}%)!`;
-      if (!currentState[userId] || currentState[userId] !== "LOW") {
-        currentState[userId] = "LOW";
-        await sendNotification(userId, msg, "THẤP");
-        io.to(`user-${userId}`).emit("sensor-update", {
-          sensorType: "humidity",
-          value,
-          msg,
-          isOverThreshold,
-        });
+      //if (!currentState[userId] || currentState[userId] !== "LOW") {
+      currentState[userId] = "LOW";
+      await sendNotification(userId, msg, "THẤP");
+      io.to(`user-${userId}`).emit("sensor-update", {
+        sensorType: "humidity",
+        value,
+        msg,
+        isOverThreshold,
+      });
+      if (hangClotheStatus === "ON") {
         adafruitService.client.publish(
           `${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe`,
           "OFF",
@@ -118,18 +132,32 @@ const checkHumidity = async () => {
           }
         );
       }
+      //}
     } else {
-      if (currentState[userId] && currentState[userId] !== "NORMAL") {
-        msg = `Độ ẩm ổn định: ${value}%.`;
-        currentState[userId] = "NORMAL";
-        // await sendNotification(userId, msg);
-        // io.to(`user-${userId}`).emit("sensor-update", {
-        //   sensorType: "humidity",
-        //   value,
-        //   msg,
-        //   isOverThreshold,
-        // });
+      //if (currentState[userId] && currentState[userId] !== "NORMAL") {
+      msg = `Độ ẩm ổn định: ${value}%.`;
+      currentState[userId] = "NORMAL";
+      // await sendNotification(userId, msg);
+      // io.to(`user-${userId}`).emit("sensor-update", {
+      //   sensorType: "humidity",
+      //   value,
+      //   msg,
+      //   isOverThreshold,
+      // });
+      if (hangClotheStatus === "OFF") {
+        adafruitService.client.publish(
+          `${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe`,
+          "ON",
+          (err) => {
+            if (err) {
+              console.error("Lỗi khi publish ON cho button-hang-clothe:", err);
+            } else {
+              console.log("Đã publish ON cho button-hang-clothe");
+            }
+          }
+        );
       }
+      //}
     }
   }
 };
