@@ -68,7 +68,7 @@ const checkHumidity = async () => {
       console.error("Lỗi khi lấy trạng thái button-hang-clothe:", error);
     }
 
-    if (value > high && hangClotheStatus === "ON") {
+    if (value > high) {
       isOverThreshold = true;
       msg = `Độ ẩm vượt ngưỡng (${value}% so với ${high}%)!`;
       if (!currentState[userId] || currentState[userId] !== "HIGH") {
@@ -80,19 +80,24 @@ const checkHumidity = async () => {
           msg,
           isOverThreshold,
         });
-        adafruitService.client.publish(
-          `${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe`,
-          "OFF",
-          (err) => {
-            if (err) {
-              console.error("Lỗi khi publish OFF cho button-hang-clothe:", err);
-            } else {
-              console.log("Đã publish OFF cho button-hang-clothe");
+        if (hangClotheStatus === "ON") {
+          adafruitService.client.publish(
+            `${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe`,
+            "OFF",
+            (err) => {
+              if (err) {
+                console.error(
+                  "Lỗi khi publish OFF cho button-hang-clothe:",
+                  err
+                );
+              } else {
+                console.log("Đã publish OFF cho button-hang-clothe");
+              }
             }
-          }
-        );
+          );
+        }
       }
-    } else if (value < low && hangClotheStatus === "ON") {
+    } else if (value < low) {
       isOverThreshold = true;
       msg = `Độ ẩm dưới ngưỡng (${value}% so với ${low}%)!`;
       if (!currentState[userId] || currentState[userId] !== "LOW") {
@@ -104,17 +109,22 @@ const checkHumidity = async () => {
           msg,
           isOverThreshold,
         });
-        adafruitService.client.publish(
-          `${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe`,
-          "OFF",
-          (err) => {
-            if (err) {
-              console.error("Lỗi khi publish OFF cho button-hang-clothe:", err);
-            } else {
-              console.log("Đã publish OFF cho button-hang-clothe");
+        if (hangClotheStatus === "ON") {
+          adafruitService.client.publish(
+            `${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe`,
+            "OFF",
+            (err) => {
+              if (err) {
+                console.error(
+                  "Lỗi khi publish OFF cho button-hang-clothe:",
+                  err
+                );
+              } else {
+                console.log("Đã publish OFF cho button-hang-clothe");
+              }
             }
-          }
-        );
+          );
+        }
       }
     } else {
       if (currentState[userId] && currentState[userId] !== "NORMAL") {
