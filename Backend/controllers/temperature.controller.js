@@ -7,15 +7,16 @@
   let lastAlertTime = {};
   let currentState = {};
 
-  const sendNotification = async (userId, msg) => {
-    const notification = new Notification({
-      user_id: userId,
-      message: msg,
-      status: "unread",
-    });
-    await notification.save();
-    console.log(`Đã gửi thông báo cho user ${userId}: ${msg}`);
-  };
+const sendNotification = async (userId, msg, lv) => {
+  const notification = new Notification({
+    user_id: userId,
+    message: msg,
+    status: "unread",
+    alertLevel: lv,
+  });
+  await notification.save();
+  console.log(`Đã gửi thông báo cho user ${userId}: ${msg}`);
+};
 
   const fetchLatestSensorData = async (feed) => {
     try {
@@ -61,68 +62,66 @@
 
       if (!currentState[userId]) currentState[userId] = "NORMAL";
 
-      if (value > high) {
-        isOverThreshold = true;
-        msg = `Nhiệt độ cao: ${value}°C (Ngưỡng: ${high}°C)!`;
-        if (currentState[userId] !== "HIGH") {
-          currentState[userId] = "HIGH";
-          lastAlertTime[userId] = now;
-          await sendNotification(userId, msg);
-          console.log(`[EMIT] sensor-update → user-${userId}: ${msg}`);
-          io.to(`user-${userId}`).emit("sensor-update", {
-            sensorType: "temperature",
-            value,
-            msg,
-            isOverThreshold,
-          });
-        } else if (lastAlertTime[userId] && now - lastAlertTime[userId] >= 3000) {
-          lastAlertTime[userId] = now;
-          await sendNotification(userId, msg);
-          io.to(`user-${userId}`).emit("sensor-update", {
-            sensorType: "temperature",
-            value,
-            msg,
-            isOverThreshold,
-          });
-        }
-      } else if (value < low) {
-        isOverThreshold = true;
-        msg = `Nhiệt độ thấp: ${value}°C (Ngưỡng: ${low}°C)!`;
-        if (currentState[userId] !== "LOW") {
-          currentState[userId] = "LOW";
-          lastAlertTime[userId] = now;
-          await sendNotification(userId, msg);
-          io.to(`user-${userId}`).emit("sensor-update", {
-            sensorType: "temperature",
-            value,
-            msg,
-            isOverThreshold,
-          });
-        } else if (lastAlertTime[userId] && now - lastAlertTime[userId] >= 3000) {
-          lastAlertTime[userId] = now;
-          await sendNotification(userId, msg);
-          io.to(`user-${userId}`).emit("sensor-update", {
-            sensorType: "temperature",
-            value,
-            msg,
-          });
-        }
-      } else {
-        if (currentState[userId] !== "NORMAL") {
-          msg = `Nhiệt độ ổn định: ${value}°C.`;
-          currentState[userId] = "NORMAL";
-          lastAlertTime[userId] = null;
-          await sendNotification(userId, msg);
-          io.to(`user-${userId}`).emit("sensor-update", {
-            sensorType: "temperature",
-            value,
-            msg,
-            isOverThreshold,
-          });
-        }
+    if (value > high) {
+      isOverThreshold = true;
+      msg = `Nhiệt độ cao: ${value}°C (Ngưỡng: ${high}°C)!`;
+      if (currentState[userId] !== "HIGH") {
+        currentState[userId] = "HIGH";
+        lastAlertTime[userId] = now;
+        await sendNotification(userId, msg, "CAO");
+        io.to(`user-${userId}`).emit("sensor-update", {
+          sensorType: "temperature",
+          value,
+          msg,
+          isOverThreshold,
+        });
+      } else if (lastAlertTime[userId] && now - lastAlertTime[userId] >= 3000) {
+        lastAlertTime[userId] = now;
+        await sendNotification(userId, msg, "CAO");
+        io.to(`user-${userId}`).emit("sensor-update", {
+          sensorType: "temperature",
+          value,
+          msg,
+          isOverThreshold,
+        });
+      }
+    } else if (value < low) {
+      isOverThreshold = true;
+      msg = `Nhiệt độ thấp: ${value}°C (Ngưỡng: ${low}°C)!`;
+      if (currentState[userId] !== "LOW") {
+        currentState[userId] = "LOW";
+        lastAlertTime[userId] = now;
+        await sendNotification(userId, msg, "THẤP");
+        io.to(`user-${userId}`).emit("sensor-update", {
+          sensorType: "temperature",
+          value,
+          msg,
+          isOverThreshold,
+        });
+      } else if (lastAlertTime[userId] && now - lastAlertTime[userId] >= 3000) {
+        lastAlertTime[userId] = now;
+        await sendNotification(userId, msg, "THẤP");
+        io.to(`user-${userId}`).emit("sensor-update", {
+          sensorType: "temperature",
+          value,
+          msg,
+        });
+      }
+    } else {
+      if (currentState[userId] !== "NORMAL") {
+        msg = `Nhiệt độ ổn định: ${value}°C.`;
+        currentState[userId] = "NORMAL";
+        lastAlertTime[userId] = null;
+        // await sendNotification(userId, msg);
+        // io.to(`user-${userId}`).emit("sensor-update", {
+        //   sensorType: "temperature",
+        //   value,
+        //   msg,
+        //   isOverThreshold,
+        // });
       }
     }
-    
-  };
+  }
+};
 
   export default { checkTemperature };

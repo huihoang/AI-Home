@@ -10,6 +10,7 @@ const NotificationSchema = new mongoose.Schema({
     enum: ["read", "unread"],
     default: "unread",
   },
+  alertLevel: { type: String },
   time: {
     type: Date,
     default: Date.now,

@@ -7,12 +7,14 @@ import adafruitService from "../utils/adafruitService.js";
 let lastAlertTime = {};
 let currentState = {};
 
-const sendNotification = async (userId, msg) => {
+const sendNotification = async (userId, msg, lv) => {
   const notification = new Notification({
     user_id: userId,
     message: msg,
     status: "unread",
+    alertLevel: lv,
   });
+  await notification.save();
   await notification.save();
   console.log(`Đã gửi thông báo cho user ${userId}: ${msg}`);
 };
@@ -77,7 +79,7 @@ const checkBright = async () => {
         });
       } else if (lastAlertTime[userId] && now - lastAlertTime[userId] >= 3000) {
         lastAlertTime[userId] = now;
-        await sendNotification(userId, msg);
+        await sendNotification(userId, msg, "CAO");
         io.to(`user-${userId}`).emit("sensor-update", {
           sensorType: "brightness",
           value,
@@ -91,7 +93,7 @@ const checkBright = async () => {
       if (currentState[userId] !== "LOW") {
         currentState[userId] = "LOW";
         lastAlertTime[userId] = now;
-        await sendNotification(userId, msg);
+        await sendNotification(userId, msg, "THẤP");
         io.to(`user-${userId}`).emit("sensor-update", {
           sensorType: "brightness",
           value,
@@ -100,7 +102,7 @@ const checkBright = async () => {
         });
       } else if (lastAlertTime[userId] && now - lastAlertTime[userId] >= 3000) {
         lastAlertTime[userId] = now;
-        await sendNotification(userId, msg);
+        await sendNotification(userId, msg, "THẤP");
         io.to(`user-${userId}`).emit("sensor-update", {
           sensorType: "brightness",
           value,
@@ -113,13 +115,13 @@ const checkBright = async () => {
         msg = `Độ sáng ổn định: ${value}%.`;
         currentState[userId] = "NORMAL";
         lastAlertTime[userId] = null;
-        await sendNotification(userId, msg);
-        io.to(`user-${userId}`).emit("sensor-update", {
-          sensorType: "brightness",
-          value,
-          msg,
-          isOverThreshold,
-        });
+        // await sendNotification(userId, msg);
+        // io.to(`user-${userId}`).emit("sensor-update", {
+        //   sensorType: "brightness",
+        //   value,
+        //   msg,
+        //   isOverThreshold,
+        // });
       }
     }
   }
