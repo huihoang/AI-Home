@@ -58,30 +58,6 @@ const checkBright = async () => {
     if (value > high) {
       isOverThreshold = true;
       msg = `Độ sáng cao: ${value}% (Ngưỡng: ${high}%)!`;
-<<<<<<< HEAD
-      if (currentState[userId] !== "HIGH") {
-        currentState[userId] = "HIGH";
-        lastAlertTime[userId] = now;
-        await sendNotification(userId, msg);
-        console.log(`[EMIT] sensor-update → user-${userId}: ${msg}`);
-        
-        io.to(`user-${userId}`).emit("sensor-update", {
-          sensorType: "brightness",
-          value,
-          msg,
-          isOverThreshold,
-        });
-      } else if (lastAlertTime[userId] && now - lastAlertTime[userId] >= 3000) {
-        lastAlertTime[userId] = now;
-        await sendNotification(userId, msg, "CAO");
-        io.to(`user-${userId}`).emit("sensor-update", {
-          sensorType: "brightness",
-          value,
-          msg,
-          isOverThreshold,
-        });
-      }
-=======
       await sendNotification(userId, msg, "CAO");
       io.to(`user-${userId}`).emit("sensor-update", {
         sensorType: "brightness",
@@ -89,7 +65,6 @@ const checkBright = async () => {
         msg,
         isOverThreshold,
       });
->>>>>>> BE_SERVER
     } else if (value < low) {
       isOverThreshold = true;
       msg = `Độ sáng thấp: ${value}% (Ngưỡng: ${low}%)!`;

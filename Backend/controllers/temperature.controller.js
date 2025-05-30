@@ -36,20 +36,9 @@ const sendNotification = async (userId, msg, lv) => {
     const value = await fetchLatestSensorData("sensor-temperature");
     if (value === null) return;
 
-<<<<<<< HEAD
-    const rooms = io.sockets.adapter.rooms;
-    const onlineUsers = [];
-    for (const [room, clients] of rooms) {
-      if (room.startsWith("user-")) {
-        const userId = room.split("user-")[1];
-        onlineUsers.push(userId);
-      }
-    }
-=======
   for (const userConfig of userConfigs) {
     const userId = userConfig.user_id;
     const { high, low } = userConfig.thresholds.temperature;
->>>>>>> BE_SERVER
 
     const userConfigs = await UserConfig.find({
       user_id: { $in: onlineUsers },

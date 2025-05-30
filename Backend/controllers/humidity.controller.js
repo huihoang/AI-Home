@@ -71,18 +71,6 @@ const checkHumidity = async () => {
     if (value > high) {
       isOverThreshold = true;
       msg = `Độ ẩm vượt ngưỡng (${value}% so với ${high}%)!`;
-<<<<<<< HEAD
-      if (!currentState[userId] || currentState[userId] !== "HIGH") {
-        currentState[userId] = "HIGH";
-        await sendNotification(userId, msg);
-        console.log(`[EMIT] sensor-update → user-${userId}: ${msg}`);
-        io.to(`user-${userId}`).emit("sensor-update", {
-          sensorType: "humidity",
-          value,
-          msg,
-          isOverThreshold,
-        });
-=======
       //if (!currentState[userId] || currentState[userId] !== "HIGH") {
       currentState[userId] = "HIGH";
       await sendNotification(userId, msg, "CAO");
@@ -93,7 +81,6 @@ const checkHumidity = async () => {
         isOverThreshold,
       });
       if (hangClotheStatus === "ON") {
->>>>>>> BE_SERVER
         adafruitService.client.publish(
           `${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe`,
           "OFF",
