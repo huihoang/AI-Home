@@ -62,12 +62,12 @@ const checkHumidity = async () => {
     let msg = "";
     let hangClotheStatus = "OFF";
 
-    try {
-      hangClotheStatus = await fetchLatestSensorData("button-hang-clothe");
-    } catch (error) {
-      console.error("Lỗi khi lấy trạng thái button-hang-clothe:", error);
-    }
-
+    //hangClotheStatus = await fetchLatestSensorData("button-hang-clothe");
+    const hangClotheStatusRes = await axios.get(
+      `https://io.adafruit.com/api/v2/${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe/data`
+    );
+    hangClotheStatus = hangClotheStatusRes.data[0].value;
+    console.log("OKKK: ", hangClotheStatus);
     if (value > high) {
       isOverThreshold = true;
       msg = `Độ ẩm vượt ngưỡng (${value}% so với ${high}%)!`;
