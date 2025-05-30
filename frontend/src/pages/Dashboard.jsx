@@ -68,6 +68,11 @@ const Dashboard = () => {
   const timeRef = useRef(new Date());
   const [displayTime, setDisplayTime] = useState(format(new Date(), 'HH:mm:ss'));
   const [activeSlide, setActiveSlide] = useState(currentSlide);
+  const [thresholds, setThresholds] = useState({
+    temperature: { min: 0, max: 0 },
+    humidity: { min: 0, max: 0 },
+    brightness: { min: 0, max: 0 }
+  });
 const checkThresholds = (value, type) => {
   if (value === null) return null;
   
@@ -91,11 +96,8 @@ const checkThresholds = (value, type) => {
   }
   return null;
 };
-  const [thresholds, setThresholds] = useState({
-    temperature: { min: 20, max: 30 },
-    humidity: { min: 40, max: 70 },
-    brightness: { min: 30, max: 80 }
-  });
+
+  
   const [chartData, setChartData] = useState({
     labels: [],
     datasets: [
@@ -229,6 +231,24 @@ useEffect(() => {
       },
     });
 
+    // Kiểm tra các giá trị hiện tại với ngưỡng mới
+    const newNotifications = [];
+    
+    if (temperature !== null) {
+      const tempNotification = checkThresholds(temperature, 'temperature');
+      if (tempNotification) newNotifications.push(tempNotification);
+    }
+    
+    if (humidity !== null) {
+      const humidNotification = checkThresholds(humidity, 'humidity');
+      if (humidNotification) newNotifications.push(humidNotification);
+    }
+    
+    if (brightness !== null) {
+      const brightNotification = checkThresholds(brightness, 'brightness');
+      if (brightNotification) newNotifications.push(brightNotification);
+    }
+
     // Thêm thông báo sau khi lưu thành công
     const successNotification = {
       message: `Đã lưu ngưỡng mới: 
@@ -239,7 +259,8 @@ useEffect(() => {
       type: 'settings',
       read: false
     };
-    setNotifications(prev => [successNotification, ...prev.slice(0, 19)]);
+    
+    setNotifications(prev => [successNotification, ...newNotifications, ...prev.slice(0, 19 - newNotifications.length)]);
 
     setCommandFeedback({
       command: 'settings',
@@ -504,22 +525,7 @@ setTimeout(() => {
       });
     }
   }, [doorStatus]);
-  // Temperature
-  useEffect(() => {
-  // Kiểm tra lại các giá trị hiện tại khi ngưỡng thay đổi
-  if (temperature !== null) {
-    const tempNotification = checkThresholds(temperature, 'temperature');
-    if (tempNotification) setNotifications(prev => [tempNotification, ...prev.slice(0, 19)]);
-  }
-  if (humidity !== null) {
-    const humidNotification = checkThresholds(humidity, 'humidity');
-    if (humidNotification) setNotifications(prev => [humidNotification, ...prev.slice(0, 19)]);
-  }
-  if (brightness !== null) {
-    const brightNotification = checkThresholds(brightness, 'brightness');
-    if (brightNotification) setNotifications(prev => [brightNotification, ...prev.slice(0, 19)]);
-  }
-}, [thresholds]);
+  
 useEffect(() => {
   if (temperature !== null) {
     const newEntry = {
@@ -718,11 +724,14 @@ const [cameraImages, setCameraImages] = useState([]);
   }
 };
 useEffect(() => {
-  fetchData();
-  const interval = setInterval(fetchData, 10000);
-  return () => clearInterval(interval);
+  fetchData(); // gọi lần đầu
+  const interval = setInterval(fetchData, 10000); // gọi mỗi 10 giây
+  return () => clearInterval(interval); // dọn khi unmount
 }, []);
 
+
+  // Calendar logic
+  // Load ghi chú từ localStorage khi khởi động
   const NoteModal = ({ date, note, onSave, onDelete, onClose }) => {
     const [inputValue, setInputValue] = useState(note || "");
 

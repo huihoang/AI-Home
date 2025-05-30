@@ -1,44 +1,34 @@
 import axios from "axios";
+import mqttClient from "../utils/adafruitService.js";
 import UserConfig from "../models/userConfig.model.js";
 import Notification from "../models/notification.model.js";
-import mqttClient from "../utils/adafruitService.js";
+
 const checkHumidity = async (req, res) => {
   let isOverThreshold = false;
   let msg = "";
-
+  let humidity = -1;
   try {
     const userId = req.query.user_id;
-    if (!userId) {
-      return res
-        .status(400)
-        .json({ message: "Thiếu user_id trong request. Vui lòng đăng nhập" });
-    }
+    // const userId = "67d8458df526a4418561a65d";
+    const userConfig = await UserConfig.findOne({ user_id: userId });
+    if (!userConfig) return;
 
-    const response = await axios.get(
-      "https://io.adafruit.com/api/v2/hoangbk4/feeds/sensor-humidity/data"
-    );
+    const { high, low } = userConfig.thresholds.humidity;
 
-    const latestData = response.data[0];
-    const humidity = parseFloat(latestData.value);
     const hangClotheStatus = await axios.get(
       "https://io.adafruit.com/api/v2/hoangbk4/feeds/button-hang-clothe/data"
     );
     const statusLastData = hangClotheStatus.data[0].value;
-    // Lấy ngưỡng nhiệt độ từ database
-    const userConfig = await UserConfig.findOne({ user_id: userId });
-    if (!userConfig) {
-      return res
-        .status(404)
-        .json({ message: "Không tìm thấy cấu hình người dùng." });
-    }
-
-    const { high, low } = userConfig.thresholds.humidity;
-
+    mqttClient.client.on("message", async (topic, message) => {
+      if (topic.includes("sensor-humidity")) {
+        humidity = parseFloat(message.toString());
+      }
+    });
     if (humidity > high && statusLastData == "ON") {
+      console.log("Độ ẩm vượt ngưỡng!");
       isOverThreshold = true;
-      msg = `Độ ẩm vượt ngưỡng (${humidity}% so với cấu hình người dùng ${high}%)!`;
+      msg = `Độ ẩm vượt ngưỡng ${humidity}% - so với ngưỡng ${high}%!`;
 
-      //Lưu thông báo vào database
       const notification = new Notification({
         user_id: userConfig.user_id,
         message: msg,
@@ -49,12 +39,11 @@ const checkHumidity = async (req, res) => {
         `${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe`,
         "OFF"
       );
-    } else if (humidity < low && statusLastData == "ON") {
+    } else if (humidity < low && statusLastData == "ON" && humidity > 0) {
       console.log("Độ ẩm dưới ngưỡng!");
       isOverThreshold = true;
-      msg = `Độ ẩm dưới ngưỡng (${humidity}% so với cấu hình người dùng ${low}%)!`;
+      msg = `Độ ẩm dưới ngưỡng ${low}% - so với ngưỡng ${humidity}%!`;
 
-      // Lưu thông báo vào database
       const notification = new Notification({
         user_id: userConfig.user_id,
         message: msg,
@@ -66,10 +55,13 @@ const checkHumidity = async (req, res) => {
         "OFF"
       );
     } else {
-      console.log("Độ ẩm ở ngưỡng an toàn.");
+      console.log("Độ ẩm ở ngưỡng an toàn");
     }
-
-    res.json({ isOverThreshold, msg });
+    res.json({
+      isOverThreshold: isOverThreshold,
+      msg: msg,
+      humidity: humidity,
+    });
   } catch (error) {
     console.error("Lỗi khi lấy dữ liệu từ Adafruit IO:", error);
     res.status(500).json({ message: "Không thể lấy trạng thái nhiệt độ." });
