@@ -137,6 +137,22 @@ const checkHumidity = async () => {
         //   msg,
         //   isOverThreshold,
         // });
+        if (hangClotheStatus === "OFF") {
+          adafruitService.client.publish(
+            `${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe`,
+            "ON",
+            (err) => {
+              if (err) {
+                console.error(
+                  "Lỗi khi publish ON cho button-hang-clothe:",
+                  err
+                );
+              } else {
+                console.log("Đã publish ON cho button-hang-clothe");
+              }
+            }
+          );
+        }
       }
     }
   }
