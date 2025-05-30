@@ -7,13 +7,14 @@ import adafruitService from "../utils/adafruitService.js";
 let lastAlertTime = {};
 let currentState = {};
 
-const sendNotification = async (userId, msg) => {
+const sendNotification = async (userId, msg, alertLevel) => {
   const notification = new Notification({
     user_id: userId,
     message: msg,
     status: "unread",
+    alertLevel: alertLevel,
   });
-  // await notification.save();
+  await notification.save();
   console.log(`Đã gửi thông báo cho user ${userId}: ${msg}`);
 };
 
@@ -72,7 +73,7 @@ const checkHumidity = async () => {
       msg = `Độ ẩm vượt ngưỡng (${value}% so với ${high}%)!`;
       if (!currentState[userId] || currentState[userId] !== "HIGH") {
         currentState[userId] = "HIGH";
-        await sendNotification(userId, msg);
+        await sendNotification(userId, msg, "CAO");
         io.to(`user-${userId}`).emit("sensor-update", {
           sensorType: "humidity",
           value,
@@ -96,7 +97,7 @@ const checkHumidity = async () => {
       msg = `Độ ẩm dưới ngưỡng (${value}% so với ${low}%)!`;
       if (!currentState[userId] || currentState[userId] !== "LOW") {
         currentState[userId] = "LOW";
-        await sendNotification(userId, msg);
+        await sendNotification(userId, msg, "THẤP");
         io.to(`user-${userId}`).emit("sensor-update", {
           sensorType: "humidity",
           value,
@@ -119,13 +120,13 @@ const checkHumidity = async () => {
       if (currentState[userId] && currentState[userId] !== "NORMAL") {
         msg = `Độ ẩm ổn định: ${value}%.`;
         currentState[userId] = "NORMAL";
-        await sendNotification(userId, msg);
-        io.to(`user-${userId}`).emit("sensor-update", {
-          sensorType: "humidity",
-          value,
-          msg,
-          isOverThreshold,
-        });
+        // await sendNotification(userId, msg);
+        // io.to(`user-${userId}`).emit("sensor-update", {
+        //   sensorType: "humidity",
+        //   value,
+        //   msg,
+        //   isOverThreshold,
+        // });
       }
     }
   }

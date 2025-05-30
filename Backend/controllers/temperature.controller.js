@@ -7,13 +7,14 @@ import adafruitService from "../utils/adafruitService.js";
 let lastAlertTime = {};
 let currentState = {};
 
-const sendNotification = async (userId, msg) => {
+const sendNotification = async (userId, msg, lv) => {
   const notification = new Notification({
     user_id: userId,
     message: msg,
     status: "unread",
+    alertLevel: lv,
   });
-  // await notification.save();
+  await notification.save();
   console.log(`Đã gửi thông báo cho user ${userId}: ${msg}`);
 };
 
@@ -67,7 +68,7 @@ const checkTemperature = async () => {
       if (currentState[userId] !== "HIGH") {
         currentState[userId] = "HIGH";
         lastAlertTime[userId] = now;
-        await sendNotification(userId, msg);
+        await sendNotification(userId, msg, "CAO");
         io.to(`user-${userId}`).emit("sensor-update", {
           sensorType: "temperature",
           value,
@@ -76,7 +77,7 @@ const checkTemperature = async () => {
         });
       } else if (lastAlertTime[userId] && now - lastAlertTime[userId] >= 3000) {
         lastAlertTime[userId] = now;
-        await sendNotification(userId, msg);
+        await sendNotification(userId, msg, "CAO");
         io.to(`user-${userId}`).emit("sensor-update", {
           sensorType: "temperature",
           value,
@@ -90,7 +91,7 @@ const checkTemperature = async () => {
       if (currentState[userId] !== "LOW") {
         currentState[userId] = "LOW";
         lastAlertTime[userId] = now;
-        await sendNotification(userId, msg);
+        await sendNotification(userId, msg, "THẤP");
         io.to(`user-${userId}`).emit("sensor-update", {
           sensorType: "temperature",
           value,
@@ -99,7 +100,7 @@ const checkTemperature = async () => {
         });
       } else if (lastAlertTime[userId] && now - lastAlertTime[userId] >= 3000) {
         lastAlertTime[userId] = now;
-        await sendNotification(userId, msg);
+        await sendNotification(userId, msg, "THẤP");
         io.to(`user-${userId}`).emit("sensor-update", {
           sensorType: "temperature",
           value,
@@ -111,13 +112,13 @@ const checkTemperature = async () => {
         msg = `Nhiệt độ ổn định: ${value}°C.`;
         currentState[userId] = "NORMAL";
         lastAlertTime[userId] = null;
-        await sendNotification(userId, msg);
-        io.to(`user-${userId}`).emit("sensor-update", {
-          sensorType: "temperature",
-          value,
-          msg,
-          isOverThreshold,
-        });
+        // await sendNotification(userId, msg);
+        // io.to(`user-${userId}`).emit("sensor-update", {
+        //   sensorType: "temperature",
+        //   value,
+        //   msg,
+        //   isOverThreshold,
+        // });
       }
     }
   }

@@ -11,6 +11,7 @@ import imageRoutes from "./image.routes.js";
 import voiceRoutes from "./voice.routes.js";
 import cameraRoutes from "./camera.routes.js";
 import doorRoutes from "./door.routes.js";
+import notificationRoutes from "./notification.routes.js";
 // import mqttClient from "../utils/adafruitService.js";
 const router = express.Router();
 
@@ -26,5 +27,5 @@ router.use("/config", userConfig);
 router.use("/voice", voiceRoutes);
 router.use("/images", imageRoutes);
 router.use("/camera", cameraRoutes);
-
+router.use("/notification", notificationRoutes);
 export default router;
