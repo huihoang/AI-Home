@@ -7,6 +7,8 @@ import { useMemo } from 'react';
 import { useCallback } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
+import { io } from "socket.io-client";
+import { isValid } from 'date-fns';
 Chart.register(...registerables);
 import mqtt from 'mqtt';
 const API_URL_TEMP = "https://io.adafruit.com/api/v2/hoangbk4/feeds/sensor-temperature/data";
@@ -69,9 +71,9 @@ const Dashboard = () => {
   const [displayTime, setDisplayTime] = useState(format(new Date(), 'HH:mm:ss'));
   const [activeSlide, setActiveSlide] = useState(currentSlide);
   const [thresholds, setThresholds] = useState({
-    temperature: { min: 0, max: 0 },
-    humidity: { min: 0, max: 0 },
-    brightness: { min: 0, max: 0 }
+    temperature: { min: temperature, max: temperature },
+    humidity: { min: humidity, max: humidity },
+    brightness: { min: brightness, max: brightness }
   });
 const checkThresholds = (value, type) => {
   if (value === null) return null;
@@ -286,77 +288,44 @@ setTimeout(() => {
     const userId = currentUser?._id;
     if (!userId) return;
 
-    const [tempRes, humidRes, brightRes] = await Promise.all([
-      axios.get(`http://localhost:8080/sensors/temperature/status?user_id=${userId}`),
-      axios.get(`http://localhost:8080/sensors/humidity/status?user_id=${userId}`),
-      axios.get(`http://localhost:8080/sensors/bright/status?user_id=${userId}`)
-    ]);
+    // Remove these failing HTTP requests or implement the endpoints
+    // const [tempRes, humidRes, brightRes] = await Promise.all([
+    //   axios.get(`http://localhost:8080/sensors/temperature/status?user_id=${userId}`),
+    //   axios.get(`http://localhost:8080/sensors/humidity/status?user_id=${userId}`),
+    //   axios.get(`http://localhost:8080/sensors/bright/status?user_id=${userId}`)
+    // ]);
 
+    // Instead, rely on WebSocket for real-time updates
+    // Or if you need HTTP fallback, implement proper endpoints
+    
+    // Example of checking thresholds directly from state:
     const newNotifications = [];
-
-    // Xử lý nhiệt độ
-    if (tempRes.data.isOverThreshold) {
-      console.log(tempRes.data)
-      const status = tempRes.data.currentValue > thresholds.temperature.max ? "CAO" : "THẤP";
-      const threshold = tempRes.data.currentValue > thresholds.temperature.max 
-        ? thresholds.temperature.max 
-        : thresholds.temperature.min;
-      
-      newNotifications.push({
-        message: `Nhiệt độ ${status}: ${tempRes.data.currentValue}°C (Ngưỡng: ${threshold}°C)`,
-        timestamp: new Date(),
-        type: 'temperature',
-        read: false,
-        severity: 'high'
-      });
+    
+    if (temperature !== null) {
+      // const tempNotification = checkThresholds(temperature, 'temperature');
+      if (tempNotification) newNotifications.push(tempNotification);
     }
-
-    // Xử lý độ ẩm
-    if (humidRes.data.isOverThreshold) {
-      const status = humidRes.data.currentValue > thresholds.humidity.max ? "CAO" : "THẤP";
-      const threshold = humidRes.data.currentValue > thresholds.humidity.max 
-        ? thresholds.humidity.max 
-        : thresholds.humidity.min;
-      
-      newNotifications.push({
-        message: `Độ ẩm ${status}: ${humidRes.data.currentValue}% (Ngưỡng: ${threshold}%)`,
-        timestamp: new Date(),
-        type: 'humidity',
-        read: false,
-        severity: 'medium'
-      });
+    
+    if (humidity !== null) {
+      // const humidNotification = checkThresholds(humidity, 'humidity');
+      if (humidNotification) newNotifications.push(humidNotification);
     }
-
-    // Xử lý ánh sáng
-    if (brightRes.data.isOverThreshold) {
-      const status = brightRes.data.currentValue > thresholds.brightness.max ? "CAO" : "THẤP";
-      const threshold = brightRes.data.currentValue > thresholds.brightness.max 
-        ? thresholds.brightness.max 
-        : thresholds.brightness.min;
-      
-      newNotifications.push({
-        message: `Ánh sáng ${status}: ${brightRes.data.currentValue}% (Ngưỡng: ${threshold}%)`,
-        timestamp: new Date(),
-        type: 'brightness',
-        read: false,
-        severity: 'low'
-      });
+    
+    if (brightness !== null) {
+      // const brightNotification = checkThresholds(brightness, 'brightness');
+      if (brightNotification) newNotifications.push(brightNotification);
     }
 
     if (newNotifications.length > 0) {
       setNotifications(prev => [...newNotifications, ...prev.slice(0, 19 - newNotifications.length)]);
     }
   } catch (err) {
-    console.error("Lỗi khi lấy cảnh báo từ API:", err);
+    console.error("Lỗi khi lấy cảnh báo:", err);
   }
-}, [thresholds]);
+}, [temperature, humidity, brightness, thresholds]);
 
 
-  useEffect(() => {
-  fetchSensorWarnings();
-  const interval = setInterval(fetchSensorWarnings, 10000);
-  return () => clearInterval(interval);
-}, [fetchSensorWarnings]);
+
 
   useEffect(() => {
     setActiveSlide(currentSlide);
@@ -723,10 +692,62 @@ const [cameraImages, setCameraImages] = useState([]);
     console.error('❌ Lỗi khi lấy dữ liệu cảm biến:', error);
   }
 };
+
 useEffect(() => {
-  fetchData(); // gọi lần đầu
-  const interval = setInterval(fetchData, 10000); // gọi mỗi 10 giây
-  return () => clearInterval(interval); // dọn khi unmount
+  const token = localStorage.getItem("token");
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  const socket = io("http://localhost:8080", {
+    auth: { token },
+    reconnection: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000,
+  });
+
+  if (currentUser?._id) {
+    socket.emit("join-room", currentUser._id);
+  }
+
+  socket.on("connect", () => {
+    console.log("Connected to WebSocket server");
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Disconnected from WebSocket server");
+  });
+
+  socket.on("sensor-update", (data) => {
+  console.log("Received sensor update:", data);
+
+  // Cập nhật dữ liệu cảm biến tương ứng
+  switch (data.sensorType) {
+    case 'temperature':
+      setTemperature(data.value);
+      break;
+    case 'humidity':
+      setHumidity(data.value);
+      break;
+    case 'brightness':
+      setBrightness(data.value);
+      break;
+    default:
+      break;
+  }
+
+  // Tạo thông báo nếu vượt ngưỡng
+  const notification = {
+    message: data.msg,
+    timestamp: new Date(),
+    type: data.sensorType,
+    read: false,
+    severity: data.isOverThreshold ? 'high' : 'low'
+  };
+  setNotifications(prev => [notification, ...prev.slice(0, 19)]);
+});
+
+  return () => {
+    socket.off("sensor-update");
+    socket.disconnect();
+  };
 }, []);
 
 

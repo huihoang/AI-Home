@@ -1,70 +1,134 @@
 import axios from "axios";
-import mqttClient from "../utils/adafruitService.js";
 import UserConfig from "../models/userConfig.model.js";
 import Notification from "../models/notification.model.js";
+import { getIO } from "../middleware/socket.js";
+import adafruitService from "../utils/adafruitService.js";
 
-const checkHumidity = async (req, res) => {
-  let isOverThreshold = false;
-  let msg = "";
-  let humidity = -1;
+let lastAlertTime = {};
+let currentState = {};
+
+const sendNotification = async (userId, msg) => {
+  const notification = new Notification({
+    user_id: userId,
+    message: msg,
+    status: "unread",
+  });
+  await notification.save();
+  console.log(`Đã gửi thông báo cho user ${userId}: ${msg}`);
+};
+
+const fetchLatestSensorData = async (feed) => {
   try {
-    const userId = req.query.user_id;
-    // const userId = "67d8458df526a4418561a65d";
-    const userConfig = await UserConfig.findOne({ user_id: userId });
-    if (!userConfig) return;
+    const response = await axios.get(
+      `https://io.adafruit.com/api/v2/${process.env.ADAFRUIT_USERNAME}/feeds/${feed}/data`
+    );
+    console.log(response.data[0].value);
+    return parseFloat(response.data[0].value);
+  } catch (error) {
+    console.error(
+      `Lỗi khi lấy dữ liệu từ Adafruit IO (${feed}):`,
+      error.message
+    );
+    return null;
+  }
+};
 
+const checkHumidity = async () => {
+  const io = getIO();
+  const value = await fetchLatestSensorData("sensor-humidity");
+  if (value === null) return;
+
+  // Lấy danh sách user đang online từ WebSocket (nếu muốn tối ưu)
+  const rooms = io.sockets.adapter.rooms;
+  const onlineUsers = [];
+  for (const [room, clients] of rooms) {
+    if (room.startsWith("user-")) {
+      const userId = room.split("user-")[1];
+      onlineUsers.push(userId);
+    }
+  }
+
+  // Lấy user từ database, nhưng chỉ xử lý cho user online
+  const userConfigs = await UserConfig.find({
+    user_id: { $in: onlineUsers },
+  });
+
+  for (const userConfig of userConfigs) {
+    const userId = userConfig.user_id;
     const { high, low } = userConfig.thresholds.humidity;
 
-    const hangClotheStatus = await axios.get(
-      "https://io.adafruit.com/api/v2/hoangbk4/feeds/button-hang-clothe/data"
-    );
-    const statusLastData = hangClotheStatus.data[0].value;
-    mqttClient.client.on("message", async (topic, message) => {
-      if (topic.includes("sensor-humidity")) {
-        humidity = parseFloat(message.toString());
-      }
-    });
-    if (humidity > high && statusLastData == "ON") {
-      console.log("Độ ẩm vượt ngưỡng!");
-      isOverThreshold = true;
-      msg = `Độ ẩm vượt ngưỡng ${humidity}% - so với ngưỡng ${high}%!`;
+    let isOverThreshold = false;
+    let msg = "";
+    let hangClotheStatus = "OFF";
 
-      const notification = new Notification({
-        user_id: userConfig.user_id,
-        message: msg,
-        status: "unread",
-      });
-      await notification.save();
-      mqttClient.client.publish(
-        `${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe`,
-        "OFF"
-      );
-    } else if (humidity < low && statusLastData == "ON" && humidity > 0) {
-      console.log("Độ ẩm dưới ngưỡng!");
-      isOverThreshold = true;
-      msg = `Độ ẩm dưới ngưỡng ${low}% - so với ngưỡng ${humidity}%!`;
-
-      const notification = new Notification({
-        user_id: userConfig.user_id,
-        message: msg,
-        status: "unread",
-      });
-      await notification.save();
-      mqttClient.client.publish(
-        `${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe`,
-        "OFF"
-      );
-    } else {
-      console.log("Độ ẩm ở ngưỡng an toàn");
+    try {
+      hangClotheStatus = await fetchLatestSensorData("button-hang-clothe");
+    } catch (error) {
+      console.error("Lỗi khi lấy trạng thái button-hang-clothe:", error);
     }
-    res.json({
-      isOverThreshold: isOverThreshold,
-      msg: msg,
-      humidity: humidity,
-    });
-  } catch (error) {
-    console.error("Lỗi khi lấy dữ liệu từ Adafruit IO:", error);
-    res.status(500).json({ message: "Không thể lấy trạng thái nhiệt độ." });
+
+    if (value > high && hangClotheStatus === "ON") {
+      isOverThreshold = true;
+      msg = `Độ ẩm vượt ngưỡng (${value}% so với ${high}%)!`;
+      if (!currentState[userId] || currentState[userId] !== "HIGH") {
+        currentState[userId] = "HIGH";
+        await sendNotification(userId, msg);
+        console.log(`[EMIT] sensor-update → user-${userId}: ${msg}`);
+        io.to(`user-${userId}`).emit("sensor-update", {
+          sensorType: "humidity",
+          value,
+          msg,
+          isOverThreshold,
+        });
+        adafruitService.client.publish(
+          `${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe`,
+          "OFF",
+          (err) => {
+            if (err) {
+              console.error("Lỗi khi publish OFF cho button-hang-clothe:", err);
+            } else {
+              console.log("Đã publish OFF cho button-hang-clothe");
+            }
+          }
+        );
+      }
+    } else if (value < low && hangClotheStatus === "ON") {
+      isOverThreshold = true;
+      msg = `Độ ẩm dưới ngưỡng (${value}% so với ${low}%)!`;
+      if (!currentState[userId] || currentState[userId] !== "LOW") {
+        currentState[userId] = "LOW";
+        await sendNotification(userId, msg);
+        io.to(`user-${userId}`).emit("sensor-update", {
+          sensorType: "humidity",
+          value,
+          msg,
+          isOverThreshold,
+        });
+        adafruitService.client.publish(
+          `${process.env.ADAFRUIT_USERNAME}/feeds/button-hang-clothe`,
+          "OFF",
+          (err) => {
+            if (err) {
+              console.error("Lỗi khi publish OFF cho button-hang-clothe:", err);
+            } else {
+              console.log("Đã publish OFF cho button-hang-clothe");
+            }
+          }
+        );
+      }
+    } else {
+      if (currentState[userId] && currentState[userId] !== "NORMAL") {
+        msg = `Độ ẩm ổn định: ${value}%.`;
+        currentState[userId] = "NORMAL";
+        await sendNotification(userId, msg);
+        io.to(`user-${userId}`).emit("sensor-update", {
+          sensorType: "humidity",
+          value,
+          msg,
+          isOverThreshold,
+        });
+      }
+    }
   }
 };
 

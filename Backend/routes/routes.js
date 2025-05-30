@@ -1,7 +1,7 @@
 import express from "express";
 import userRoutes from "../routes/user.routes.js";
 import deviceRoutes from "../routes/device.routes.js";
-import sensorRoutes from "../routes/sensor.routes.js";
+// import sensorRoutes from "../routes/sensor.routes.js";
 import feedRoutes from "../routes/feed.routes.js";
 import ledRoutes from "./led.routes.js";
 import fanRoutes from "./fan.routes.js";
@@ -16,7 +16,7 @@ const router = express.Router();
 
 router.use("/users", userRoutes);
 router.use("/devices", deviceRoutes);
-router.use("/sensors", sensorRoutes);
+// router.use("/sensors", sensorRoutes);
 router.use("/feeds", feedRoutes);
 router.use("/led", ledRoutes);
 router.use("/fan", fanRoutes);
