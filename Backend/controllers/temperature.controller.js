@@ -44,19 +44,6 @@ const sendNotification = async (userId, msg, lv) => {
       user_id: { $in: onlineUsers },
     });
 
-<<<<<<< HEAD
-    for (const userConfig of userConfigs) {
-      const userId = userConfig.user_id;
-      const { high, low } = userConfig.thresholds.temperature;
-      const now = new Date();
-
-      let msg = "";
-      let isOverThreshold = false;
-
-      if (!currentState[userId]) currentState[userId] = "NORMAL";
-
-=======
->>>>>>> BE_SERVER
     if (value > high) {
       isOverThreshold = true;
       msg = `Nhiệt độ cao: ${value}°C (Ngưỡng: ${high}°C)!`;
