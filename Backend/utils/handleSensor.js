@@ -19,7 +19,7 @@ const initSensorHandling = () => {
     } catch (error) {
       console.error("Lỗi khi xử lý độ sáng:", error);
     }
-  }, 30000); // 30 giây
+  }, 10000);
 };
 
 export default { initSensorHandling };

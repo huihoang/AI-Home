@@ -741,7 +741,7 @@ const Dashboard = () => {
 
     const interval = setInterval(() => {
       fetchData();
-    }, 10000); // mỗi 10s
+    }, 15000); // mỗi 10s
 
     return () => clearInterval(interval);
   }, []);
@@ -3682,8 +3682,8 @@ const Dashboard = () => {
         fetchImages();
         fetchDetectionHistory();
 
-        const imageInterval = setInterval(fetchImages, 5000);
-        const detectionInterval = setInterval(fetchDetectionHistory, 30000);
+        const imageInterval = setInterval(fetchImages, 15000);
+        const detectionInterval = setInterval(fetchDetectionHistory, 15000);
 
         return () => {
           clearInterval(imageInterval);
