@@ -63,7 +63,7 @@ const updatedVoiceStatus = async (req, res) => {
       mqttClient.client.on("message", messageHandler);
     });
 
-    return res.json({ 
+    return res.json({
       message: `Lệnh được hiểu từ giọng nói là: ${latestTopic} ${latestMessage}`,
       success: success,
       device: latestTopic.split("-")[1], // led/fan/door

@@ -239,17 +239,14 @@ useEffect(() => {
     
     if (temperature !== null) {
       const tempNotification = checkThresholds(temperature, 'temperature');
-      if (tempNotification) newNotifications.push(tempNotification);
     }
     
     if (humidity !== null) {
       const humidNotification = checkThresholds(humidity, 'humidity');
-      if (humidNotification) newNotifications.push(humidNotification);
     }
     
     if (brightness !== null) {
       const brightNotification = checkThresholds(brightness, 'brightness');
-      if (brightNotification) newNotifications.push(brightNotification);
     }
 
     // Thêm thông báo sau khi lưu thành công
@@ -508,11 +505,6 @@ useEffect(() => {
       temperature: [newEntry, ...prev.temperature.slice(0, 99)]
     }));
 
-    // Kiểm tra ngưỡng
-    const tempNotification = checkThresholds(temperature, 'temperature');
-    if (tempNotification) {
-      setNotifications(prev => [tempNotification, ...prev.slice(0, 19)]);
-    }
 
     // Cập nhật biểu đồ
     setChartData(prev => {
@@ -547,11 +539,7 @@ useEffect(() => {
       humidity: [newEntry, ...prev.humidity.slice(0, 99)]
     }));
 
-    // Kiểm tra ngưỡng
-    const humidNotification = checkThresholds(humidity, 'humidity');
-    if (humidNotification) {
-      setNotifications(prev => [humidNotification, ...prev.slice(0, 19)]);
-    }
+
 
     // Cập nhật biểu đồ
     setChartData(prev => ({
@@ -581,11 +569,6 @@ useEffect(() => {
       brightness: [newEntry, ...prev.brightness.slice(0, 99)]
     }));
 
-    // Kiểm tra ngưỡng
-    const brightNotification = checkThresholds(brightness, 'brightness');
-    if (brightNotification) {
-      setNotifications(prev => [brightNotification, ...prev.slice(0, 19)]);
-    }
 
     // Cập nhật biểu đồ
     setChartData(prev => ({
@@ -1055,27 +1038,16 @@ const response = await axios.post('http://localhost:8080/voice/update-status', {
         // Cập nhật trạng thái thiết bị dựa trên phản hồi từ backend
         switch (device) {
           case 'led':
-            setLedStatus(deviceStatus === '1' || deviceStatus === 'ON');
+            setLedStatus(deviceStatus === 'ON');
             break;
           case 'fan':
-            setFanStatus(deviceStatus === 'ON');
-            if (response.data.speedLevel) {
-              setFanLevel(response.data.speedLevel);
+            setFanStatus(deviceStatus !== '0');
+            if (response.data.deviceStatus) {
+              setFanLevel(response.data.deviceStatus);
             }
             break;
           case 'door':
-            setDoorStatus(deviceStatus === 'OPEN');
-            // Tự động đóng cửa sau 5 giây nếu là lệnh mở
-            if (deviceStatus === 'OPEN') {
-              setTimeout(() => {
-                setDoorStatus(false);
-                setCommandFeedback({
-                  command: 'auto',
-                  result: 'Cửa đã tự động đóng',
-                  timestamp: new Date() 
-                });
-              }, 5000);
-            }
+            setDoorStatus(deviceStatus === 'ON');
             break;
         }
         return; // Thoát nếu backend xử lý thành công
@@ -3621,7 +3593,7 @@ const [currentPage, setCurrentPage] = useState(1);
 
                 {cameraStatus && (
                     <>
-                        <button
+                        {/* <button
                             onClick={captureImage}
                             style={{
                                 padding: '12px 24px',
@@ -3645,9 +3617,9 @@ const [currentPage, setCurrentPage] = useState(1);
                         >
                             <span style={{ marginRight: '8px' }}>📸</span>
                             {isCapturing ? 'ĐANG CHỤP...' : 'CHỤP ẢNH'}
-                        </button>
+                        </button> */}
 
-                        <button
+                        {/* <button
                             onClick={() => {
                                 fetchImages();
                                 fetchDetectionHistory();
@@ -3674,7 +3646,7 @@ const [currentPage, setCurrentPage] = useState(1);
                         >
                             <span style={{ marginRight: '8px' }}>🔄</span>
                             LÀM MỚI
-                        </button>
+                        </button> */}
                     </>
                 )}
             </div>
