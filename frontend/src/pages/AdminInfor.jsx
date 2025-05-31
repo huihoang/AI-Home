@@ -1,7 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { FaUserShield, FaEdit, FaLock, FaSignOutAlt, FaUsers,FaUser , FaThermometerHalf, FaCog, FaPlus, FaTrash, FaArrowLeft } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
-import '../components/Infor.css';
+import React, { useState, useEffect } from "react";
+import {
+  FaUserShield,
+  FaEdit,
+  FaLock,
+  FaSignOutAlt,
+  FaUsers,
+  FaUser,
+  FaThermometerHalf,
+  FaCog,
+  FaPlus,
+  FaTrash,
+  FaArrowLeft,
+} from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import "../components/Infor.css";
 
 const AdminInfor = () => {
   const navigate = useNavigate();
@@ -9,18 +21,18 @@ const AdminInfor = () => {
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({});
   const [darkMode, setDarkMode] = useState(false);
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState("profile");
   const [users, setUsers] = useState([]);
   const [devices, setDevices] = useState([]);
   const [newDevice, setNewDevice] = useState({
-    name: '',
-    type: 'light',
+    name: "",
+    type: "light",
     status: false,
-    room: 'living_room'
+    room: "living_room",
   });
 
   useEffect(() => {
-    const savedUser = JSON.parse(localStorage.getItem('currentUser'));
+    const savedUser = JSON.parse(localStorage.getItem("currentUser"));
     if (savedUser) {
       setUser(savedUser);
       setFormData(savedUser);
@@ -28,14 +40,42 @@ const AdminInfor = () => {
 
     // Load mock data for admin
     const mockUsers = [
-      { id: 1, username: 'user1', fullName: 'Nguyễn Văn A', email: 'user1@example.com', phone: '0123456789', role: 'user', joinDate: '2023-01-15' },
-      { id: 2, username: 'user2', fullName: 'Trần Thị B', email: 'user2@example.com', phone: '0987654321', role: 'user', joinDate: '2023-02-20' }
+      {
+        id: 1,
+        username: "user1",
+        fullName: "Nguyễn Văn A",
+        email: "user1@example.com",
+        phone: "0123456789",
+        role: "user",
+        joinDate: "2023-01-15",
+      },
+      {
+        id: 2,
+        username: "user2",
+        fullName: "Trần Thị B",
+        email: "user2@example.com",
+        phone: "0987654321",
+        role: "user",
+        joinDate: "2023-02-20",
+      },
     ];
     setUsers(mockUsers);
 
     const mockDevices = [
-      { id: 1, name: 'Đèn phòng khách', type: 'light', status: true, room: 'living_room' },
-      { id: 2, name: 'Quạt phòng ngủ', type: 'fan', status: false, room: 'bedroom' }
+      {
+        id: 1,
+        name: "Đèn phòng khách",
+        type: "light",
+        status: true,
+        room: "living_room",
+      },
+      {
+        id: 2,
+        name: "Quạt phòng ngủ",
+        type: "fan",
+        status: false,
+        room: "bedroom",
+      },
     ];
     setDevices(mockDevices);
   }, []);
@@ -44,22 +84,22 @@ const AdminInfor = () => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: value
+      [name]: value,
     });
   };
 
   const handleSave = () => {
     const updatedUser = { ...formData };
     setUser(updatedUser);
-    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-    
+    localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+
     // Update in users array
-    const users = JSON.parse(localStorage.getItem('users')) || [];
-    const updatedUsers = users.map(u => 
+    const users = JSON.parse(localStorage.getItem("users")) || [];
+    const updatedUsers = users.map((u) =>
       u.username === updatedUser.username ? updatedUser : u
     );
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-    
+    localStorage.setItem("users", JSON.stringify(updatedUsers));
+
     setEditMode(false);
   };
 
@@ -70,7 +110,7 @@ const AdminInfor = () => {
       reader.onloadend = () => {
         setFormData({
           ...formData,
-          avatar: reader.result
+          avatar: reader.result,
         });
       };
       reader.readAsDataURL(file);
@@ -78,42 +118,42 @@ const AdminInfor = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('currentUser');
-    navigate('/login');
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("currentUser");
+    navigate("/login");
   };
 
   const handleNewDeviceChange = (e) => {
     const { name, value, type, checked } = e.target;
     setNewDevice({
       ...newDevice,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     });
   };
 
   const addDevice = () => {
-    if (newDevice.name.trim() === '') return;
-    
+    if (newDevice.name.trim() === "") return;
+
     const device = {
       id: devices.length + 1,
-      ...newDevice
+      ...newDevice,
     };
-    
+
     setDevices([...devices, device]);
     setNewDevice({
-      name: '',
-      type: 'light',
+      name: "",
+      type: "light",
       status: false,
-      room: 'living_room'
+      room: "living_room",
     });
   };
 
   const removeDevice = (id) => {
-    setDevices(devices.filter(device => device.id !== id));
+    setDevices(devices.filter((device) => device.id !== id));
   };
 
   const removeUser = (id) => {
-    setUsers(users.filter(user => user.id !== id));
+    setUsers(users.filter((user) => user.id !== id));
   };
 
   if (!user) {
@@ -121,12 +161,9 @@ const AdminInfor = () => {
   }
 
   return (
-    <div className={`account-page ${darkMode ? 'dark-mode' : ''}`}>
+    <div className={`account-page ${darkMode ? "dark-mode" : ""}`}>
       <div className="account-container">
-        <button 
-          className="btn-back"
-          onClick={() => navigate(-1)}
-        >
+        <button className="btn-back" onClick={() => navigate(-1)}>
           <FaArrowLeft /> Quay lại
         </button>
 
@@ -138,39 +175,43 @@ const AdminInfor = () => {
         </div>
 
         <div className="admin-tabs">
-          <button 
-            className={`admin-tab ${activeTab === 'profile' ? 'active' : ''}`}
-            onClick={() => setActiveTab('profile')}
+          <button
+            className={`admin-tab ${activeTab === "profile" ? "active" : ""}`}
+            onClick={() => setActiveTab("profile")}
           >
             <FaUserShield /> Thông tin cá nhân
           </button>
-          <button 
-            className={`admin-tab ${activeTab === 'users' ? 'active' : ''}`}
-            onClick={() => setActiveTab('users')}
+          <button
+            className={`admin-tab ${activeTab === "users" ? "active" : ""}`}
+            onClick={() => setActiveTab("users")}
           >
             <FaUsers /> Quản lý người dùng
           </button>
-          <button 
-            className={`admin-tab ${activeTab === 'devices' ? 'active' : ''}`}
-            onClick={() => setActiveTab('devices')}
+          <button
+            className={`admin-tab ${activeTab === "devices" ? "active" : ""}`}
+            onClick={() => setActiveTab("devices")}
           >
             <FaThermometerHalf /> Quản lý thiết bị
           </button>
-          <button 
-            className={`admin-tab ${activeTab === 'settings' ? 'active' : ''}`}
-            onClick={() => setActiveTab('settings')}
+          <button
+            className={`admin-tab ${activeTab === "settings" ? "active" : ""}`}
+            onClick={() => setActiveTab("settings")}
           >
             <FaCog /> Cài đặt hệ thống
           </button>
         </div>
 
-        {activeTab === 'profile' && (
+        {activeTab === "profile" && (
           <>
             <div className="account-profile">
               <div className="avatar-section">
                 <div className="avatar-container">
                   {formData.avatar ? (
-                    <img src={formData.avatar} alt="Avatar" className="avatar-image" />
+                    <img
+                      src={formData.avatar}
+                      alt="Avatar"
+                      className="avatar-image"
+                    />
                   ) : (
                     <div className="avatar-placeholder">
                       <FaUserShield size={40} />
@@ -178,7 +219,11 @@ const AdminInfor = () => {
                   )}
                   {editMode && (
                     <label className="avatar-upload">
-                      <input type="file" accept="image/*" onChange={handleAvatarChange} />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarChange}
+                      />
                       <FaEdit /> Thay đổi
                     </label>
                   )}
@@ -193,7 +238,7 @@ const AdminInfor = () => {
                       <input
                         type="text"
                         name="username"
-                        value={formData.username || ''}
+                        value={formData.username || ""}
                         onChange={handleInputChange}
                         disabled
                       />
@@ -203,7 +248,7 @@ const AdminInfor = () => {
                       <input
                         type="text"
                         name="fullName"
-                        value={formData.fullName || ''}
+                        value={formData.fullName || ""}
                         onChange={handleInputChange}
                       />
                     </div>
@@ -212,7 +257,7 @@ const AdminInfor = () => {
                       <input
                         type="email"
                         name="email"
-                        value={formData.email || ''}
+                        value={formData.email || ""}
                         onChange={handleInputChange}
                       />
                     </div>
@@ -221,7 +266,7 @@ const AdminInfor = () => {
                       <input
                         type="tel"
                         name="phone"
-                        value={formData.phone || ''}
+                        value={formData.phone || ""}
                         onChange={handleInputChange}
                       />
                     </div>
@@ -229,10 +274,19 @@ const AdminInfor = () => {
                 ) : (
                   <>
                     <h3>{user.fullName || user.username}</h3>
-                    <p><strong>Tên đăng nhập:</strong> {user.username}</p>
-                    <p><strong>Email:</strong> {user.email}</p>
-                    <p><strong>Số điện thoại:</strong> {user.phone}</p>
-                    <p><strong>Ngày tham gia:</strong> {new Date(user.joinDate).toLocaleDateString()}</p>
+                    <p>
+                      <strong>Tên đăng nhập:</strong> {user.username}
+                    </p>
+                    <p>
+                      <strong>Email:</strong> {user.email}
+                    </p>
+                    <p>
+                      <strong>Số điện thoại:</strong> {user.phone}
+                    </p>
+                    <p>
+                      <strong>Ngày tham gia:</strong>{" "}
+                      {new Date(user.joinDate).toLocaleDateString()}
+                    </p>
                   </>
                 )}
               </div>
@@ -244,7 +298,10 @@ const AdminInfor = () => {
                   <button className="btn-save" onClick={handleSave}>
                     Lưu thay đổi
                   </button>
-                  <button className="btn-cancel" onClick={() => setEditMode(false)}>
+                  <button
+                    className="btn-cancel"
+                    onClick={() => setEditMode(false)}
+                  >
                     Hủy bỏ
                   </button>
                 </>
@@ -265,12 +322,14 @@ const AdminInfor = () => {
           </>
         )}
 
-        {activeTab === 'users' && (
+        {activeTab === "users" && (
           <div className="admin-content">
-            <h3><FaUsers /> Danh sách người dùng</h3>
-            
+            <h3>
+              <FaUsers /> Danh sách người dùng
+            </h3>
+
             <div className="user-list">
-              {users.map(user => (
+              {users.map((user) => (
                 <div key={user.id} className="user-card">
                   <div className="user-info">
                     <div className="user-avatar">
@@ -283,14 +342,16 @@ const AdminInfor = () => {
                     <div>
                       <h4>{user.fullName || user.username}</h4>
                       <p>{user.email}</p>
-                      <p>Tham gia: {new Date(user.joinDate).toLocaleDateString()}</p>
+                      <p>
+                        Tham gia: {new Date(user.joinDate).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
                   <div className="user-actions">
                     <button className="btn-edit">
                       <FaEdit />
                     </button>
-                    <button 
+                    <button
                       className="btn-delete"
                       onClick={() => removeUser(user.id)}
                     >
@@ -302,7 +363,9 @@ const AdminInfor = () => {
             </div>
 
             <div className="add-user-form">
-              <h4><FaPlus /> Thêm người dùng mới</h4>
+              <h4>
+                <FaPlus /> Thêm người dùng mới
+              </h4>
               <div className="form-group">
                 <input type="text" placeholder="Email người dùng" />
                 <button className="btn-save">Gửi lời mời</button>
@@ -311,27 +374,38 @@ const AdminInfor = () => {
           </div>
         )}
 
-        {activeTab === 'devices' && (
+        {activeTab === "devices" && (
           <div className="admin-content">
-            <h3><FaThermometerHalf /> Quản lý thiết bị</h3>
-            
+            <h3>
+              <FaThermometerHalf /> Quản lý thiết bị
+            </h3>
+
             <div className="device-list">
-              {devices.map(device => (
+              {devices.map((device) => (
                 <div key={device.id} className="device-card">
                   <div className="device-icon">
-                    {device.type === 'light' ? <FaThermometerHalf /> : <FaThermometerHalf />}
+                    {device.type === "light" ? (
+                      <FaThermometerHalf />
+                    ) : (
+                      <FaThermometerHalf />
+                    )}
                   </div>
                   <div className="device-info">
                     <h4>{device.name}</h4>
-                    <p>Loại: {device.type === 'light' ? 'Đèn' : 'Quạt'}</p>
-                    <p>Phòng: {device.room === 'living_room' ? 'Phòng khách' : 'Phòng ngủ'}</p>
-                    <p>Trạng thái: {device.status ? 'Đang bật' : 'Đang tắt'}</p>
+                    <p>Loại: {device.type === "light" ? "Đèn" : "Quạt"}</p>
+                    <p>
+                      Phòng:{" "}
+                      {device.room === "living_room"
+                        ? "Phòng khách"
+                        : "Phòng ngủ"}
+                    </p>
+                    <p>Trạng thái: {device.status ? "Đang bật" : "Đang tắt"}</p>
                   </div>
                   <div className="device-actions">
                     <button className="btn-edit">
                       <FaEdit />
                     </button>
-                    <button 
+                    <button
                       className="btn-delete"
                       onClick={() => removeDevice(device.id)}
                     >
@@ -343,11 +417,13 @@ const AdminInfor = () => {
             </div>
 
             <div className="add-device-form">
-              <h4><FaPlus /> Thêm thiết bị mới</h4>
+              <h4>
+                <FaPlus /> Thêm thiết bị mới
+              </h4>
               <div className="form-group">
                 <label>Tên thiết bị</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   name="name"
                   value={newDevice.name}
                   onChange={handleNewDeviceChange}
@@ -356,7 +432,7 @@ const AdminInfor = () => {
               </div>
               <div className="form-group">
                 <label>Loại thiết bị</label>
-                <select 
+                <select
                   name="type"
                   value={newDevice.type}
                   onChange={handleNewDeviceChange}
@@ -368,7 +444,7 @@ const AdminInfor = () => {
               </div>
               <div className="form-group">
                 <label>Phòng</label>
-                <select 
+                <select
                   name="room"
                   value={newDevice.room}
                   onChange={handleNewDeviceChange}
@@ -380,8 +456,8 @@ const AdminInfor = () => {
                 </select>
               </div>
               <div className="form-group checkbox-group">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   id="deviceStatus"
                   name="status"
                   checked={newDevice.status}
@@ -396,10 +472,12 @@ const AdminInfor = () => {
           </div>
         )}
 
-        {activeTab === 'settings' && (
+        {activeTab === "settings" && (
           <div className="admin-content">
-            <h3><FaCog /> Cài đặt hệ thống</h3>
-            
+            <h3>
+              <FaCog /> Cài đặt hệ thống
+            </h3>
+
             <div className="settings-section">
               <h4>Cài đặt chung</h4>
               <div className="form-group">
@@ -427,8 +505,8 @@ const AdminInfor = () => {
             <div className="settings-section">
               <h4>Giao diện</h4>
               <div className="form-group checkbox-group">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   id="darkMode"
                   checked={darkMode}
                   onChange={() => setDarkMode(!darkMode)}

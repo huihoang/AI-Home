@@ -3,22 +3,22 @@
   padding: 20px;
   min-height: 100vh;
   transition: background-color 0.3s ease;
-  }
-  
-  .account-container {
+}
+
+.account-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
-  }
-  
-  .account-header {
+}
+
+.account-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
-  }
-  
-  .role-badge {
+}
+
+.role-badge {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -26,42 +26,42 @@
   background-color: #f1f2f6;
   border-radius: 20px;
   font-size: 14px;
-  }
-  
-  .dark-mode .role-badge {
+}
+
+.dark-mode .role-badge {
   background-color: #2d3748;
   color: white;
-  }
-  
-  .account-profile {
+}
+
+.account-profile {
   display: grid;
   grid-template-columns: 240px 1fr;
   gap: 30px;
   margin-bottom: 30px;
-  }
-  
-  .avatar-section {
+}
+
+.avatar-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  }
-  
-  .avatar-container {
+}
+
+.avatar-container {
   position: relative;
   width: 180px;
   height: 180px;
   margin-bottom: 20px;
-  }
-  
-  .avatar-image {
+}
+
+.avatar-image {
   width: 100%;
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid #e2e8f0;
-  }
-  
-  .avatar-placeholder {
+}
+
+.avatar-placeholder {
   width: 100%;
   height: 100%;
   border-radius: 50%;
@@ -71,9 +71,9 @@
   justify-content: center;
   color: #64748b;
   border: 3px solid #e2e8f0;
-  }
-  
-  .avatar-upload {
+}
+
+.avatar-upload {
   position: absolute;
   bottom: 0;
   right: 0;
@@ -86,51 +86,51 @@
   gap: 5px;
   cursor: pointer;
   font-size: 14px;
-  }
-  
-  .avatar-upload input {
+}
+
+.avatar-upload input {
   display: none;
-  }
-  
-  .info-section h3 {
+}
+
+.info-section h3 {
   margin-top: 0;
   margin-bottom: 20px;
-  }
-  
-  .info-section p {
+}
+
+.info-section p {
   margin: 10px 0;
-  }
-  
-  .form-group {
+}
+
+.form-group {
   margin-bottom: 15px;
-  }
-  
-  .form-group label {
+}
+
+.form-group label {
   display: block;
   margin-bottom: 5px;
   font-weight: 500;
-  }
-  
-  .form-group input,
-  .form-group select {
+}
+
+.form-group input,
+.form-group select {
   width: 100%;
   padding: 10px;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
   font-size: 14px;
-  }
-  
-  .account-actions {
+}
+
+.account-actions {
   display: flex;
   gap: 15px;
   flex-wrap: wrap;
-  }
-  
-  .btn-edit,
-  .btn-save,
-  .btn-cancel,
-  .btn-change-password,
-  .btn-logout {
+}
+
+.btn-edit,
+.btn-save,
+.btn-cancel,
+.btn-change-password,
+.btn-logout {
   padding: 10px 20px;
   border-radius: 6px;
   font-size: 14px;
@@ -139,70 +139,70 @@
   gap: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
-  }
-  
-  .btn-edit {
+}
+
+.btn-edit {
   background-color: #2563eb;
   color: white;
   border: none;
-  }
-  
-  .btn-save {
+}
+
+.btn-save {
   background-color: #10b981;
   color: white;
   border: none;
-  }
-  
-  .btn-cancel {
+}
+
+.btn-cancel {
   background-color: #f1f2f6;
   border: none;
-  }
-  
-  .btn-change-password {
+}
+
+.btn-change-password {
   background-color: #f59e0b;
   color: white;
   border: none;
-  }
-  
-  .btn-logout {
+}
+
+.btn-logout {
   background-color: #ef4444;
   color: white;
   border: none;
-  }
-  
-  /* Dark mode styles */
-  .dark-mode {
+}
+
+/* Dark mode styles */
+.dark-mode {
   background-color: #1a202c;
   color: #e2e8f0;
-  }
-  
-  .dark-mode .form-group input,
-  .dark-mode .form-group select {
+}
+
+.dark-mode .form-group input,
+.dark-mode .form-group select {
   background-color: #2d3748;
   border-color: #4a5568;
   color: #e2e8f0;
-  }
-  
-  .dark-mode .avatar-placeholder {
+}
+
+.dark-mode .avatar-placeholder {
   background-color: #2d3748;
   border-color: #4a5568;
   color: #a0aec0;
-  }
-  
-  /* ADMIN-SPECIFIC STYLES */
-  .admin-tabs {
+}
+
+/* ADMIN-SPECIFIC STYLES */
+.admin-tabs {
   display: flex;
   gap: 10px;
   margin-bottom: 30px;
   border-bottom: 1px solid #dfe4ea;
   padding-bottom: 15px;
-  }
-  
-  .dark-mode .admin-tabs {
+}
+
+.dark-mode .admin-tabs {
   border-bottom-color: #57606f;
-  }
-  
-  .admin-tab {
+}
+
+.admin-tab {
   padding: 10px 15px;
   background-color: #f1f2f6;
   border: none;
@@ -213,81 +213,81 @@
   gap: 8px;
   font-size: 14px;
   transition: all 0.3s ease;
-  }
-  
-  .dark-mode .admin-tab {
+}
+
+.dark-mode .admin-tab {
   background-color: #57606f;
   color: white;
-  }
-  
-  .admin-tab:hover {
+}
+
+.admin-tab:hover {
   background-color: #dfe4ea;
-  }
-  
-  .dark-mode .admin-tab:hover {
+}
+
+.dark-mode .admin-tab:hover {
   background-color: #3d4852;
-  }
-  
-  .admin-tab.active {
+}
+
+.admin-tab.active {
   background-color: #1e90ff;
   color: white;
-  }
-  
-  .dark-mode .admin-tab.active {
+}
+
+.dark-mode .admin-tab.active {
   background-color: #187bcd;
-  }
-  
-  .admin-content {
+}
+
+.admin-content {
   padding: 20px;
   background-color: #f8f9fa;
   border-radius: 12px;
   margin-bottom: 20px;
-  }
-  
-  .dark-mode .admin-content {
+}
+
+.dark-mode .admin-content {
   background-color: #3d4852;
-  }
-  
-  .admin-content h3 {
+}
+
+.admin-content h3 {
   margin-top: 0;
   margin-bottom: 20px;
   display: flex;
   align-items: center;
   gap: 10px;
-  }
-  
-  .user-list,
-  .device-list {
+}
+
+.user-list,
+.device-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 15px;
   margin-bottom: 30px;
-  }
-  
-  .user-card,
-  .device-card {
+}
+
+.user-card,
+.device-card {
   background-color: white;
   border-radius: 10px;
   padding: 15px;
   display: flex;
   justify-content: space-between;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-  }
-  
-  .dark-mode .user-card,
-  .dark-mode .device-card {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.dark-mode .user-card,
+.dark-mode .device-card {
   background-color: #2f3542;
-  }
-  
-  .user-info,
-  .device-info {
+}
+
+.user-info,
+.device-info {
   display: flex;
   gap: 15px;
   align-items: center;
-  }
-  
-  .user-avatar,
-  .device-icon {
+}
+
+.user-avatar,
+.device-icon {
   width: 50px;
   height: 50px;
   background-color: #f1f2f6;
@@ -296,20 +296,20 @@
   align-items: center;
   justify-content: center;
   font-size: 20px;
-  }
-  
-  .dark-mode .user-avatar,
-  .dark-mode .device-icon {
+}
+
+.dark-mode .user-avatar,
+.dark-mode .device-icon {
   background-color: #57606f;
-  }
-  
-  .user-actions,
-  .device-actions {
+}
+
+.user-actions,
+.device-actions {
   display: flex;
   gap: 10px;
-  }
-  
-  .btn-delete {
+}
+
+.btn-delete {
   background-color: #ff4757;
   color: white;
   border: none;
@@ -321,55 +321,55 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  }
-  
-  .btn-delete:hover {
+}
+
+.btn-delete:hover {
   background-color: #e84118;
-  }
-  
-  .add-user-form,
-  .add-device-form {
+}
+
+.add-user-form,
+.add-device-form {
   background-color: white;
   padding: 20px;
   border-radius: 10px;
   margin-top: 30px;
-  }
-  
-  .dark-mode .add-user-form,
-  .dark-mode .add-device-form {
+}
+
+.dark-mode .add-user-form,
+.dark-mode .add-device-form {
   background-color: #2f3542;
-  }
-  
-  .add-user-form h4,
-  .add-device-form h4 {
+}
+
+.add-user-form h4,
+.add-device-form h4 {
   margin-top: 0;
   display: flex;
   align-items: center;
   gap: 10px;
-  }
-  
-  .checkbox-group {
+}
+
+.checkbox-group {
   display: flex;
   align-items: center;
   gap: 10px;
-  }
-  
-  .settings-section {
+}
+
+.settings-section {
   margin-bottom: 30px;
   padding-bottom: 20px;
   border-bottom: 1px solid #dfe4ea;
-  }
-  
-  .dark-mode .settings-section {
+}
+
+.dark-mode .settings-section {
   border-bottom-color: #57606f;
-  }
-  
-  .settings-section h4 {
+}
+
+.settings-section h4 {
   margin-top: 0;
   margin-bottom: 15px;
-  }
-  
-  /* USER-SPECIFIC STYLES /
+}
+
+/* USER-SPECIFIC STYLES /
   /* === Hiệu ứng hover & focus === */
 .form-group input:focus {
   border-color: #2563eb;
@@ -424,4 +424,3 @@ button:active {
     justify-content: center;
   }
 }
-

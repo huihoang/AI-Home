@@ -1,48 +1,49 @@
-import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import '../components/LoginForm.css';
-import axios from 'axios';
+import React, { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import "../components/LoginForm.css";
+import axios from "axios";
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const token = searchParams.get('token');
+  const token = searchParams.get("token");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (password !== confirmPassword) {
-      setError('Mật khẩu nhập lại không khớp');
+      setError("Mật khẩu nhập lại không khớp");
       return;
     }
 
     setIsLoading(true);
-    setError('');
-    
+    setError("");
+
     try {
-        console.log("TOKEN gửi từ URL:", token);
-console.log("MẬT KHẨU gửi:", password);
+      console.log("TOKEN gửi từ URL:", token);
+      console.log("MẬT KHẨU gửi:", password);
 
-      const response = await axios.post('http://localhost:8080/users/reset-password', {
-  token,
-  new_password: password
-});
-
-
+      const response = await axios.post(
+        "http://localhost:8080/users/reset-password",
+        {
+          token,
+          new_password: password,
+        }
+      );
 
       if (response.data.success) {
         setSuccess(true);
       } else {
-        setError(response.data.message || 'Có lỗi xảy ra khi đặt lại mật khẩu');
+        setError(response.data.message || "Có lỗi xảy ra khi đặt lại mật khẩu");
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Không thể kết nối đến server');
+      setError(err.response?.data?.message || "Không thể kết nối đến server");
     } finally {
       setIsLoading(false);
     }
@@ -63,9 +64,9 @@ console.log("MẬT KHẨU gửi:", password);
         {!success && (
           <>
             <label htmlFor="password">Mật khẩu mới</label>
-            <input 
-              type="password" 
-              placeholder="Nhập mật khẩu mới" 
+            <input
+              type="password"
+              placeholder="Nhập mật khẩu mới"
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -74,9 +75,9 @@ console.log("MẬT KHẨU gửi:", password);
             />
 
             <label htmlFor="confirmPassword">Nhập lại mật khẩu mới</label>
-            <input 
-              type="password" 
-              placeholder="Nhập lại mật khẩu mới" 
+            <input
+              type="password"
+              placeholder="Nhập lại mật khẩu mới"
               id="confirmPassword"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -84,19 +85,15 @@ console.log("MẬT KHẨU gửi:", password);
               minLength="6"
             />
 
-            <button 
-              type="submit" 
-              className="login-button"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Đang xử lý...' : 'Đặt lại mật khẩu'}
+            <button type="submit" className="login-button" disabled={isLoading}>
+              {isLoading ? "Đang xử lý..." : "Đặt lại mật khẩu"}
             </button>
           </>
         )}
-        
+
         {success && (
           <div className="register-link">
-            <span onClick={() => navigate('/login')}>Đăng nhập ngay</span>
+            <span onClick={() => navigate("/login")}>Đăng nhập ngay</span>
           </div>
         )}
       </form>
