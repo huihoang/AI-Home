@@ -239,17 +239,14 @@ useEffect(() => {
     
     if (temperature !== null) {
       const tempNotification = checkThresholds(temperature, 'temperature');
-      if (tempNotification) newNotifications.push(tempNotification);
     }
     
     if (humidity !== null) {
       const humidNotification = checkThresholds(humidity, 'humidity');
-      if (humidNotification) newNotifications.push(humidNotification);
     }
     
     if (brightness !== null) {
       const brightNotification = checkThresholds(brightness, 'brightness');
-      if (brightNotification) newNotifications.push(brightNotification);
     }
 
     // Thêm thông báo sau khi lưu thành công
@@ -1041,27 +1038,16 @@ const response = await axios.post('http://localhost:8080/voice/update-status', {
         // Cập nhật trạng thái thiết bị dựa trên phản hồi từ backend
         switch (device) {
           case 'led':
-            setLedStatus(deviceStatus === '1' || deviceStatus === 'ON');
+            setLedStatus(deviceStatus === 'ON');
             break;
           case 'fan':
-            setFanStatus(deviceStatus === 'ON');
-            if (response.data.speedLevel) {
-              setFanLevel(response.data.speedLevel);
+            setFanStatus(deviceStatus !== '0');
+            if (response.data.deviceStatus) {
+              setFanLevel(response.data.deviceStatus);
             }
             break;
           case 'door':
             setDoorStatus(deviceStatus === 'ON');
-            // Tự động đóng cửa sau 5 giây nếu là lệnh mở
-            if (deviceStatus === 'ON') {
-              setTimeout(() => {
-                setDoorStatus(false);
-                setCommandFeedback({
-                  command: 'auto',
-                  result: 'Cửa đã tự động đóng',
-                  timestamp: new Date()
-                });
-              }, 5000);
-            }
             break;
         }
         return; // Thoát nếu backend xử lý thành công
