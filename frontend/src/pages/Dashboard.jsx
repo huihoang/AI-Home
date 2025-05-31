@@ -100,6 +100,7 @@ const Dashboard = () => {
   const [isListening, setIsListening] = useState(false);
   const [commandFeedback, setCommandFeedback] = useState(null);
   const timeRef = useRef(new Date());
+  
   const [displayTime, setDisplayTime] = useState(
     format(new Date(), "HH:mm:ss")
   );
@@ -3645,10 +3646,10 @@ const Dashboard = () => {
         });
 
         if (response.data.success) {
-          // Sắp xếp theo thời gian mới nhất và không giới hạn số lượng
           const sortedData = response.data.data.sort(
-            (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
           );
+          console.log(response.data.data);
           setDetectionHistory(sortedData);
         }
       } catch (error) {
@@ -4160,6 +4161,7 @@ const Dashboard = () => {
         darkMode={darkMode}
         onLogout={handleLogout}
         notifications={notifications || []}
+        setNotifications={setNotifications}
         onDarkModeToggle={useCallback(() => {
           const newMode = !darkMode;
           setDarkMode(newMode);
