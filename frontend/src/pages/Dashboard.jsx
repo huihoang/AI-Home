@@ -508,11 +508,6 @@ useEffect(() => {
       temperature: [newEntry, ...prev.temperature.slice(0, 99)]
     }));
 
-    // Kiểm tra ngưỡng
-    const tempNotification = checkThresholds(temperature, 'temperature');
-    if (tempNotification) {
-      setNotifications(prev => [tempNotification, ...prev.slice(0, 19)]);
-    }
 
     // Cập nhật biểu đồ
     setChartData(prev => {
@@ -547,11 +542,7 @@ useEffect(() => {
       humidity: [newEntry, ...prev.humidity.slice(0, 99)]
     }));
 
-    // Kiểm tra ngưỡng
-    const humidNotification = checkThresholds(humidity, 'humidity');
-    if (humidNotification) {
-      setNotifications(prev => [humidNotification, ...prev.slice(0, 19)]);
-    }
+
 
     // Cập nhật biểu đồ
     setChartData(prev => ({
@@ -581,11 +572,6 @@ useEffect(() => {
       brightness: [newEntry, ...prev.brightness.slice(0, 99)]
     }));
 
-    // Kiểm tra ngưỡng
-    const brightNotification = checkThresholds(brightness, 'brightness');
-    if (brightNotification) {
-      setNotifications(prev => [brightNotification, ...prev.slice(0, 19)]);
-    }
 
     // Cập nhật biểu đồ
     setChartData(prev => ({
@@ -1064,9 +1050,9 @@ const response = await axios.post('http://localhost:8080/voice/update-status', {
             }
             break;
           case 'door':
-            setDoorStatus(deviceStatus === 'OPEN');
+            setDoorStatus(deviceStatus === 'ON');
             // Tự động đóng cửa sau 5 giây nếu là lệnh mở
-            if (deviceStatus === 'OPEN') {
+            if (deviceStatus === 'ON') {
               setTimeout(() => {
                 setDoorStatus(false);
                 setCommandFeedback({
@@ -3621,7 +3607,7 @@ const [currentPage, setCurrentPage] = useState(1);
 
                 {cameraStatus && (
                     <>
-                        <button
+                        {/* <button
                             onClick={captureImage}
                             style={{
                                 padding: '12px 24px',
@@ -3645,9 +3631,9 @@ const [currentPage, setCurrentPage] = useState(1);
                         >
                             <span style={{ marginRight: '8px' }}>📸</span>
                             {isCapturing ? 'ĐANG CHỤP...' : 'CHỤP ẢNH'}
-                        </button>
+                        </button> */}
 
-                        <button
+                        {/* <button
                             onClick={() => {
                                 fetchImages();
                                 fetchDetectionHistory();
@@ -3674,7 +3660,7 @@ const [currentPage, setCurrentPage] = useState(1);
                         >
                             <span style={{ marginRight: '8px' }}>🔄</span>
                             LÀM MỚI
-                        </button>
+                        </button> */}
                     </>
                 )}
             </div>
