@@ -1,7 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { FaUser, FaEdit, FaLock, FaSignOutAlt, FaArrowLeft } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
-import '../components/Infor.css';
+import React, { useState, useEffect } from "react";
+import {
+  FaUser,
+  FaEdit,
+  FaLock,
+  FaSignOutAlt,
+  FaArrowLeft,
+} from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import "../components/Infor.css";
 
 const UserInfor = () => {
   const navigate = useNavigate();
@@ -11,7 +17,7 @@ const UserInfor = () => {
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
-    const savedUser = JSON.parse(localStorage.getItem('currentUser'));
+    const savedUser = JSON.parse(localStorage.getItem("currentUser"));
     if (savedUser) {
       setUser(savedUser);
       setFormData(savedUser);
@@ -22,22 +28,22 @@ const UserInfor = () => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: value
+      [name]: value,
     });
   };
 
   const handleSave = () => {
     const updatedUser = { ...formData };
     setUser(updatedUser);
-    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-    
+    localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+
     // Update in users array
-    const users = JSON.parse(localStorage.getItem('users')) || [];
-    const updatedUsers = users.map(u => 
+    const users = JSON.parse(localStorage.getItem("users")) || [];
+    const updatedUsers = users.map((u) =>
       u.user_name === updatedUser.user_name ? updatedUser : u
     );
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-    
+    localStorage.setItem("users", JSON.stringify(updatedUsers));
+
     setEditMode(false);
   };
 
@@ -48,7 +54,7 @@ const UserInfor = () => {
       reader.onloadend = () => {
         setFormData({
           ...formData,
-          avatar: reader.result
+          avatar: reader.result,
         });
       };
       reader.readAsDataURL(file);
@@ -56,9 +62,9 @@ const UserInfor = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('currentUser');
-    navigate('/login');
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("currentUser");
+    navigate("/login");
   };
 
   if (!user) {
@@ -66,19 +72,16 @@ const UserInfor = () => {
   }
 
   return (
-    <div className={`account-page ${darkMode ? 'dark-mode' : ''}`}>
+    <div className={`account-page ${darkMode ? "dark-mode" : ""}`}>
       <div className="account-container">
-        <button 
-          className="btn-back"
-          onClick={() => navigate(-1)}
-        >
+        <button className="btn-back" onClick={() => navigate(-1)}>
           <FaArrowLeft /> Quay lại
         </button>
 
         <div className="account-header">
           <h2>Thông Tin Tài Khoản</h2>
           <div className="role-badge">
-            <FaUser /> {user.role === 'admin' ? 'Quản trị viên' : 'Người dùng'}
+            <FaUser /> {user.role === "admin" ? "Quản trị viên" : "Người dùng"}
           </div>
         </div>
 
@@ -86,7 +89,11 @@ const UserInfor = () => {
           <div className="avatar-section">
             <div className="avatar-container">
               {formData.avatar ? (
-                <img src={formData.avatar} alt="Avatar" className="avatar-image" />
+                <img
+                  src={formData.avatar}
+                  alt="Avatar"
+                  className="avatar-image"
+                />
               ) : (
                 <div className="avatar-placeholder">
                   <FaUser size={40} />
@@ -94,7 +101,11 @@ const UserInfor = () => {
               )}
               {editMode && (
                 <label className="avatar-upload">
-                  <input type="file" accept="image/*" onChange={handleAvatarChange} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                  />
                   <FaEdit /> Thay đổi
                 </label>
               )}
@@ -109,7 +120,7 @@ const UserInfor = () => {
                   <input
                     type="text"
                     name="user_name"
-                    value={formData.user_name || ''}
+                    value={formData.user_name || ""}
                     onChange={handleInputChange}
                     disabled
                   />
@@ -119,7 +130,7 @@ const UserInfor = () => {
                   <input
                     type="text"
                     name="full_Name"
-                    value={formData.full_Name || ''}
+                    value={formData.full_Name || ""}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -128,7 +139,7 @@ const UserInfor = () => {
                   <input
                     type="email"
                     name="email"
-                    value={formData.email || ''}
+                    value={formData.email || ""}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -137,7 +148,7 @@ const UserInfor = () => {
                   <input
                     type="tel"
                     name="phoneNum"
-                    value={formData.phoneNum || ''}
+                    value={formData.phoneNum || ""}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -145,10 +156,19 @@ const UserInfor = () => {
             ) : (
               <>
                 <h3>{user.fullName || user.username}</h3>
-                <p><strong>Tên đăng nhập:</strong> {user.user_name}</p>
-                <p><strong>Email:</strong> {user.email}</p>
-                <p><strong>Số điện thoại:</strong> {user.phoneNum}</p>
-                <p><strong>Ngày tham gia:</strong> {new Date(user.joinDate).toLocaleDateString()}</p>
+                <p>
+                  <strong>Tên đăng nhập:</strong> {user.user_name}
+                </p>
+                <p>
+                  <strong>Email:</strong> {user.email}
+                </p>
+                <p>
+                  <strong>Số điện thoại:</strong> {user.phoneNum}
+                </p>
+                <p>
+                  <strong>Ngày tham gia:</strong>{" "}
+                  {new Date(user.joinDate).toLocaleDateString()}
+                </p>
               </>
             )}
           </div>

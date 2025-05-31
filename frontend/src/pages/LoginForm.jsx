@@ -1,35 +1,34 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import '../components/LoginForm.css';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import "../components/LoginForm.css";
 
 const LoginForm = () => {
-  const [email, setEmail] = useState('');  // Dùng email đúng với backend
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState(""); // Dùng email đúng với backend
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
-  e.preventDefault();
-  setError('');
+    e.preventDefault();
+    setError("");
 
-  try {
-    const response = await axios.post('http://localhost:8080/users/login', {
-      email,
-      password
-    });
-
+    try {
+      const response = await axios.post("http://localhost:8080/users/login", {
+        email,
+        password,
+      });
 
       const { token, user } = response.data;
 
-    localStorage.setItem('token', token);
-    localStorage.setItem('currentUser', JSON.stringify(user));
-    navigate('/dashboard');
-  } catch (err) {
+      localStorage.setItem("token", token);
+      localStorage.setItem("currentUser", JSON.stringify(user));
+      navigate("/dashboard");
+    } catch (err) {
       if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else {
-        setError('Lỗi kết nối đến server.');
+        setError("Lỗi kết nối đến server.");
       }
     }
   };
@@ -61,13 +60,19 @@ const LoginForm = () => {
           required
         />
 
-        <button type="submit" className="login-button">Đăng Nhập</button>
+        <button type="submit" className="login-button">
+          Đăng Nhập
+        </button>
 
         <div className="register-link">
-          Chưa có tài khoản? <span onClick={() => navigate('/register')}>Đăng ký ngay</span>
+          Chưa có tài khoản?{" "}
+          <span onClick={() => navigate("/register")}>Đăng ký ngay</span>
         </div>
         <div className="forgot-password-link">
-          Quên mật khẩu? <span onClick={() => navigate('/forgot-password')}>Đặt lại mật khẩu</span>
+          Quên mật khẩu?{" "}
+          <span onClick={() => navigate("/forgot-password")}>
+            Đặt lại mật khẩu
+          </span>
         </div>
       </form>
     </div>

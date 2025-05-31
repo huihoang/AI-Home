@@ -1,56 +1,56 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import '../components/LoginForm.css';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import "../components/LoginForm.css";
 
 const RegisterForm = () => {
   const [formData, setFormData] = useState({
-    user_name: '',
-    password: '',
-    confirmPassword: '',
-    full_Name: '',
-    email: '',
-    phoneNum: ''
+    user_name: "",
+    password: "",
+    confirmPassword: "",
+    full_Name: "",
+    email: "",
+    phoneNum: "",
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Mật khẩu nhập lại không khớp');
+      setError("Mật khẩu nhập lại không khớp");
       return;
     }
 
     try {
-      await axios.post('http://localhost:8080/users/register', {
+      await axios.post("http://localhost:8080/users/register", {
         user_name: formData.user_name,
         password: formData.password,
         email: formData.email,
         full_name: formData.full_Name,
         phoneNum: formData.phoneNum,
-        identification: '',
-        address: '',
-        role: 'user'
+        identification: "",
+        address: "",
+        role: "user",
       });
 
-      alert('Đăng ký thành công! Bạn sẽ được chuyển đến trang đăng nhập.');
-      navigate('/login');
+      alert("Đăng ký thành công! Bạn sẽ được chuyển đến trang đăng nhập.");
+      navigate("/login");
     } catch (err) {
       if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else {
-        setError('Lỗi kết nối đến server.');
+        setError("Lỗi kết nối đến server.");
       }
     }
   };
@@ -128,10 +128,13 @@ const RegisterForm = () => {
           required
         />
 
-        <button type="submit" className="login-button">Đăng Ký</button>
+        <button type="submit" className="login-button">
+          Đăng Ký
+        </button>
 
         <div className="register-link">
-          Đã có tài khoản? <span onClick={() => navigate('/login')}>Đăng nhập ngay</span>
+          Đã có tài khoản?{" "}
+          <span onClick={() => navigate("/login")}>Đăng nhập ngay</span>
         </div>
       </form>
     </div>
