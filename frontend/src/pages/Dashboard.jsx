@@ -235,19 +235,19 @@ useEffect(() => {
     });
 
     // Kiểm tra các giá trị hiện tại với ngưỡng mới
-    const newNotifications = [];
+    // const newNotifications = [];
     
-    if (temperature !== null) {
-      const tempNotification = checkThresholds(temperature, 'temperature');
-    }
+    // if (temperature !== null) {
+    //   const tempNotification = checkThresholds(temperature, 'temperature');
+    // }
     
-    if (humidity !== null) {
-      const humidNotification = checkThresholds(humidity, 'humidity');
-    }
+    // if (humidity !== null) {
+    //   const humidNotification = checkThresholds(humidity, 'humidity');
+    // }
     
-    if (brightness !== null) {
-      const brightNotification = checkThresholds(brightness, 'brightness');
-    }
+    // if (brightness !== null) {
+    //   const brightNotification = checkThresholds(brightness, 'brightness');
+    // }
 
     // Thêm thông báo sau khi lưu thành công
     const successNotification = {
@@ -1041,11 +1041,14 @@ const response = await axios.post('http://localhost:8080/voice/update-status', {
             setLedStatus(deviceStatus === 'ON');
             break;
           case 'fan':
-            setFanStatus(deviceStatus !== '0');
-            if (response.data.deviceStatus) {
-              setFanLevel(response.data.deviceStatus);
-            }
-            break;
+  const level = parseInt(deviceStatus);
+  if (!isNaN(level)) {
+    setFanStatus(level);
+    setFanLevel(level);
+    setFanSpeed(level * 25);
+  }
+  break;
+
           case 'door':
             setDoorStatus(deviceStatus === 'ON');
             break;
