@@ -1799,7 +1799,7 @@ const Dashboard = () => {
             transform: "translate(-50%, -50%)",
             fontSize: 20,
             fontWeight: "bold",
-            color: "#2f3542",
+            color: "#000000",
             textShadow: "0 2px 4px rgba(0,0,0,0.1)",
           }}
         >
@@ -2375,7 +2375,7 @@ const Dashboard = () => {
           width: 60,
           height: 200,
           margin: "0 auto",
-          backgroundColor: darkMode ? "#112240" : "#cce7ff",
+          backgroundColor: darkMode ? "#f1f2f6" : "#f1f2f6",
           borderRadius: 30,
           overflow: "hidden",
           boxShadow: "inset 0 4px 12px rgba(0,0,0,0.1)",
@@ -2399,7 +2399,7 @@ const Dashboard = () => {
             transform: "translate(-50%, -50%)",
             fontSize: 20,
             fontWeight: "bold",
-            color: darkMode ? "white" : "#0a192f",
+            color: darkMode ? "#000000" : "#000000",
             textShadow: "0 2px 4px rgba(0,0,0,0.1)",
           }}
         >
