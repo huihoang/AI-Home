@@ -9,7 +9,7 @@ import {
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-const Navbar = ({ onDarkModeToggle, darkMode, notifications = [] }) => {
+const Navbar = ({ onDarkModeToggle, darkMode, notifications = [], setNotifications }) => {
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [userMenuVisible, setUserMenuVisible] = useState(false);
@@ -23,6 +23,11 @@ const Navbar = ({ onDarkModeToggle, darkMode, notifications = [] }) => {
     updatedNotifications[index].read = true;
     setNotifications(updatedNotifications);
   };
+  const deleteNotification = (index) => {
+  const updatedNotifications = [...notifications];
+  updatedNotifications.splice(index, 1);
+  setNotifications(updatedNotifications);
+};
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("currentUser"));
     if (user) {
@@ -218,6 +223,7 @@ const Navbar = ({ onDarkModeToggle, darkMode, notifications = [] }) => {
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center" }}>
+                      
                       {notification.type === "temperature" && (
                         <span
                           style={{
@@ -257,6 +263,7 @@ const Navbar = ({ onDarkModeToggle, darkMode, notifications = [] }) => {
                           💡
                         </span>
                       )}
+                      
                       <div style={{ flex: 1 }}>
                         <div
                           style={{
