@@ -294,19 +294,19 @@ const Dashboard = () => {
       );
 
       // Kiểm tra các giá trị hiện tại với ngưỡng mới
-      // const newNotifications = [];
+      const newNotifications = [];
 
-      // if (temperature !== null) {
-      //   const tempNotification = checkThresholds(temperature, 'temperature');
-      // }
+      if (temperature !== null) {
+        const tempNotification = checkThresholds(temperature, 'temperature');
+      }
 
-      // if (humidity !== null) {
-      //   const humidNotification = checkThresholds(humidity, 'humidity');
-      // }
+      if (humidity !== null) {
+        const humidNotification = checkThresholds(humidity, 'humidity');
+      }
 
-      // if (brightness !== null) {
-      //   const brightNotification = checkThresholds(brightness, 'brightness');
-      // }
+      if (brightness !== null) {
+        const brightNotification = checkThresholds(brightness, 'brightness');
+      }
 
       // Thêm thông báo sau khi lưu thành công
       const successNotification = {
