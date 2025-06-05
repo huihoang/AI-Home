@@ -1,4 +1,4 @@
-  import axios from "axios";
+import axios from "axios";
   import UserConfig from "../models/userConfig.model.js";
   import Notification from "../models/notification.model.js";
   import { getIO } from "../middleware/socket.js";
@@ -36,38 +36,53 @@ const sendNotification = async (userId, msg, lv) => {
     const value = await fetchLatestSensorData("sensor-temperature");
     if (value === null) return;
 
-  for (const userConfig of userConfigs) {
-    const userId = userConfig.user_id;
-    const { high, low } = userConfig.thresholds.temperature;
+    // Get online users first
+    const rooms = io.sockets.adapter.rooms;
+    const onlineUsers = [];
+    for (const [room, clients] of rooms) {
+      if (room.startsWith("user-")) {
+        const userId = room.split("user-")[1];
+        onlineUsers.push(userId);
+      }
+    }
 
+    // Then fetch user configs
     const userConfigs = await UserConfig.find({
       user_id: { $in: onlineUsers },
     });
 
-    if (value > high) {
-      isOverThreshold = true;
-      msg = `Nhiệt độ cao: ${value}°C (Ngưỡng: ${high}°C)!`;
-      await sendNotification(userId, msg, "CAO");
-      io.to(`user-${userId}`).emit("sensor-update", {
-        sensorType: "temperature",
-        value,
-        msg,
-        isOverThreshold,
-      });
-    } else if (value < low) {
-      isOverThreshold = true;
-      msg = `Nhiệt độ thấp: ${value}°C (Ngưỡng: ${low}°C)!`;
-      await sendNotification(userId, msg, "THẤP");
-      io.to(`user-${userId}`).emit("sensor-update", {
-        sensorType: "temperature",
-        value,
-        msg,
-        isOverThreshold,
-      });
-    } else {
-      msg = `Nhiệt độ ổn định: ${value}°C.`;
+    // Then loop through configs
+    for (const userConfig of userConfigs) {
+      const userId = userConfig.user_id;
+      const { high, low } = userConfig.thresholds.temperature;
+      
+      let isOverThreshold = false;
+      let msg = "";
+
+      if (value > high) {
+        isOverThreshold = true;
+        msg = `Nhiệt độ cao: ${value}°C (Ngưỡng: ${high}°C)!`;
+        await sendNotification(userId, msg, "CAO");
+        io.to(`user-${userId}`).emit("sensor-update", {
+          sensorType: "temperature",
+          value,
+          msg,
+          isOverThreshold,
+        });
+      } else if (value < low) {
+        isOverThreshold = true;
+        msg = `Nhiệt độ thấp: ${value}°C (Ngưỡng: ${low}°C)!`;
+        await sendNotification(userId, msg, "THẤP");
+        io.to(`user-${userId}`).emit("sensor-update", {
+          sensorType: "temperature",
+          value,
+          msg,
+          isOverThreshold,
+        });
+      } else {
+        msg = `Nhiệt độ ổn định: ${value}°C.`;
+      }
     }
-  }
-};
+  };
 
   export default { checkTemperature };
